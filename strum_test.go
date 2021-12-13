@@ -93,6 +93,7 @@ func TestRegexp(t *testing.T) {
 
 	isWantGot(t, expect, words, "tokenizing with regexp")
 }
+
 func TestDecode(t *testing.T) {
 	type person struct {
 		Name   string
@@ -148,6 +149,42 @@ func TestDecode(t *testing.T) {
 				isWantGot(t, expect[i], output[i], fmt.Sprintf("decoded record %d", i))
 			}
 		})
+	}
+}
+
+func TestDecodeAll(t *testing.T) {
+	type person struct {
+		Name   string
+		Age    int
+		Active bool
+		Date   time.Time
+	}
+
+	lines := []string{
+		"John 42 true 2021-01-01T00:00:00Z",
+		"Jane 23 false 2022-01-01T00:00:00Z",
+		"Jack 36 TrUe 2023-01-01T00:00:00Z",
+	}
+
+	expect := []person{
+		{"John", 42, true, time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC)},
+		{"Jane", 23, false, time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC)},
+		{"Jack", 36, true, time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)},
+	}
+
+	r := bytes.NewBufferString(strings.Join(lines, "\n"))
+	d := strum.NewDecoder(r)
+	var output []person
+
+	err := d.DecodeAll(&output)
+	if err != nil {
+		t.Fatalf("calling DecodeAll: %v", err)
+	}
+
+	isWantGot(t, len(expect), len(output), "length of decoded slice")
+
+	for i := range expect {
+		isWantGot(t, expect[i], output[i], fmt.Sprintf("decoded record %d", i))
 	}
 }
 
@@ -404,5 +441,45 @@ func TestDecodeDate(t *testing.T) {
 				isWantGot(t, c.want, got, "decode result")
 			}
 		})
+	}
+}
+
+func TestBadTargets(t *testing.T) {
+	type person struct {
+		Name   string
+		Age    int
+		Active bool
+		Date   time.Time
+	}
+
+	lines := []string{
+		"John 42 true 2021-01-01T00:00:00Z",
+		"Jane 23 false 2022-01-01T00:00:00Z",
+		"Jack 36 TrUe 2023-01-01T00:00:00Z",
+	}
+
+	r := bytes.NewBufferString(strings.Join(lines, "\n"))
+	d := strum.NewDecoder(r)
+
+	// non-pointer
+	{
+		var v person
+		err := d.Decode(v)
+		errContains(t, err, "argument to Decode must be a pointer", "Decode with non-pointer")
+
+		var output []person
+		err = d.DecodeAll(output)
+		errContains(t, err, "argument to DecodeAll must be a pointer", "DecodeAll with non-pointer")
+	}
+
+	// pointer to invalid types
+	{
+		var v string
+		err := d.Decode(&v)
+		errContains(t, err, "argument to Decode must be a pointer to struct, not", "Decode with non-pointer-to-struct")
+
+		var output map[string]string
+		err = d.DecodeAll(&output)
+		errContains(t, err, "argument to DecodeAll must be a pointer to slice of struct, not", "DecodeAll with non-pointer-to-slice")
 	}
 }

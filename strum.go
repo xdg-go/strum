@@ -117,16 +117,19 @@ func (d *Decoder) readline() (string, error) {
 func (d *Decoder) Decode(v interface{}) error {
 	argValue := reflect.ValueOf(v)
 
-	// XXX What if Nil?
 	if argValue.Kind() != reflect.Ptr {
 		return fmt.Errorf("argument to Decode must be a pointer, not %s", argValue.Kind())
 	}
 
-	destValue := argValue.Elem()
+	return d.decode(argValue.Elem())
+}
+
+func (d *Decoder) decode(destValue reflect.Value) error {
 	if destValue.Kind() != reflect.Struct {
 		return fmt.Errorf("argument to Decode must be a pointer to struct, not %s", destValue.Kind())
 	}
 
+	// XXX What if Nil?
 	tokens, err := d.Tokens()
 	if err != nil {
 		return err
@@ -135,7 +138,7 @@ func (d *Decoder) Decode(v interface{}) error {
 	destType := destValue.Type()
 	destNS := destType.PkgPath() + "." + destType.Name()
 
-	// map tokens into v
+	// map tokens into argValue
 	numFields := destValue.NumField()
 	for i := range tokens {
 		if i >= numFields {
@@ -149,6 +152,40 @@ func (d *Decoder) Decode(v interface{}) error {
 	}
 
 	return nil
+}
+
+func (d *Decoder) DecodeAll(v interface{}) error {
+	argValue := reflect.ValueOf(v)
+
+	// XXX What if Nil?
+	if argValue.Kind() != reflect.Ptr {
+		return fmt.Errorf("argument to DecodeAll must be a pointer, not %s", argValue.Kind())
+	}
+
+	sliceValue := argValue.Elem()
+	if sliceValue.Kind() != reflect.Slice {
+		return fmt.Errorf("argument to DecodeAll must be a pointer to slice of struct, not %s", sliceValue.Kind())
+	}
+
+	sliceType := sliceValue.Type()
+
+	// Make a zero-length slice if it starts uninitialized
+	if sliceValue.IsNil() {
+		sliceValue.Set(reflect.MakeSlice(sliceType, 0, 1))
+	}
+
+	// Decode every line into the slice
+	for {
+		v := reflect.New(sliceType.Elem()).Elem()
+		err := d.decode(v)
+		if err != nil {
+			if err == io.EOF {
+				return nil
+			}
+			return err
+		}
+		sliceValue.Set(reflect.Append(sliceValue, v))
+	}
 }
 
 func decodingError(name string, err error) error {
