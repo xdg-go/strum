@@ -66,6 +66,40 @@ func TestDecodeBool(t *testing.T) {
 	}
 }
 
+func TestDecodeString(t *testing.T) {
+	cases := []struct {
+		label       string
+		input       string
+		want        string
+		errContains string
+	}{
+		{
+			label: "a",
+			input: "a",
+			want:  "a",
+		},
+		{
+			label: "a b",
+			input: "a b",
+			want:  "a b",
+		},
+	}
+
+	for _, c := range cases {
+		c := c
+		t.Run(c.label, func(t *testing.T) {
+			r := bytes.NewBufferString(c.input)
+			d := strum.NewDecoder(r)
+			var got string
+			err := d.Decode(&got)
+			errContains(t, err, c.errContains, "decode error")
+			if err == nil {
+				isWantGot(t, c.want, got, "decode result")
+			}
+		})
+	}
+}
+
 func TestDecodeInts(t *testing.T) {
 	type ints struct {
 		I   int

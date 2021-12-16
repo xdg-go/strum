@@ -20,17 +20,18 @@
 //
 //  - time.Time (only RFC 3339 strings supported at the moment)
 //
-// When decoding to variables of the types above, the line must only have
-// a single token.
+// Tokenization defaults to whitespace-separated fields, but strum supports
+// using delimiters, regular expressions, or a custom tokenizer.
+//
+// When decoding to simple variables of the types above, the line must only have
+// a single token, except for `string` which receives the whole line without
+// tokenization (excluding any newline character).
 //
 // strum also supports decoding into structs, but the fields must be one of the
 // supported simple types above.  Recursive structs are not supported.  When
-// decoding to a struct type, tokens are decoded to struct fields in order.  If
-// the input has fewer tokens than fields in the struct, the extra fields will be
-// left with zero values.
-//
-// Field extraction defaults to whitespace-separated fields, but strum supports
-// using delimiters, regular expressions, or a custom tokenizer.
+// decoding to a struct type, tokens from the line are decoded to struct fields
+// in order.  If the input has fewer tokens than fields in the struct, the extra
+// fields will be left with zero values.
 package strum
 
 import (
@@ -150,6 +151,8 @@ func (d *Decoder) decode(destValue reflect.Value) error {
 	switch destValue.Kind() {
 	case reflect.Bool:
 		return d.decodeSingleToken("bool", destValue)
+	case reflect.String:
+		return d.decodeLine("string", destValue)
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		return d.decodeSingleToken("int", destValue)
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
@@ -199,6 +202,15 @@ func (d *Decoder) decodeSingleToken(name string, destValue reflect.Value) error 
 	}
 
 	return decodeToValue(name, destValue, tokens[0])
+}
+
+func (d *Decoder) decodeLine(name string, destValue reflect.Value) error {
+	line, err := d.readline()
+	if err != nil {
+		return err
+	}
+
+	return decodeToValue(name, destValue, line)
 }
 
 // DecodeAll reads the remaining lines of input into `v`, where `v` must be a

@@ -235,7 +235,7 @@ func TestDecodeUintContainers(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	isWantGot(t, uints[1:], output, "Decode to int slice")
+	isWantGot(t, uints[1:], output, "Decode to uint slice")
 }
 
 func TestDecodeFloatContainers(t *testing.T) {
@@ -294,6 +294,35 @@ func TestDecodeBoolContainers(t *testing.T) {
 		t.Fatal(err)
 	}
 	isWantGot(t, uints[1:], output, "Decode to int slice")
+}
+
+func TestDecodeStringContainers(t *testing.T) {
+	lines := []string{
+		"42",
+		"23",
+		"36",
+		"81",
+	}
+
+	xs := []string{"42", "23", "36", "81"}
+
+	r := bytes.NewBufferString(strings.Join(lines, "\n"))
+	d := strum.NewDecoder(r)
+
+	var s string
+	var output []string
+
+	err := d.Decode(&s)
+	if err != nil {
+		t.Fatal(err)
+	}
+	isWantGot(t, xs[0], s, "Decode to string reference")
+
+	err = d.DecodeAll(&output)
+	if err != nil {
+		t.Fatal(err)
+	}
+	isWantGot(t, xs[1:], output, "Decode to string slice")
 }
 
 func TestDecodeAll(t *testing.T) {
@@ -362,13 +391,13 @@ func TestBadTargets(t *testing.T) {
 
 	// pointer to invalid types
 	{
-		var v string
+		var v complex128
 		err := d.Decode(&v)
-		errContains(t, err, "cannot decode into type string (kind string)", "Decode with non-pointer-to-struct")
+		errContains(t, err, "cannot decode into type complex128 (kind complex128)", "Decode with pointer to unsupported type")
 
 		var output map[string]string
 		err = d.DecodeAll(&output)
-		errContains(t, err, "argument to DecodeAll must be a pointer to slice, not", "DecodeAll with non-pointer-to-slice")
+		errContains(t, err, "argument to DecodeAll must be a pointer to slice, not", "DecodeAll with pointer to slice of unsupported type")
 	}
 
 	// nil
