@@ -33,9 +33,7 @@ import (
 	"io"
 	"reflect"
 	"regexp"
-	"strconv"
 	"strings"
-	"time"
 )
 
 // A Tokenizer is a function that breaks an input string into tokens.
@@ -212,59 +210,4 @@ func (d *Decoder) DecodeAll(v interface{}) error {
 		}
 		sliceValue.Set(reflect.Append(sliceValue, v))
 	}
-}
-
-func decodingError(name string, err error) error {
-	return fmt.Errorf("error decoding to field '%s': %w", name, err)
-}
-
-var timeType = reflect.TypeOf(time.Time{})
-
-func decodeToValue(name string, v reflect.Value, s string) error {
-	// XXX here if it can TextUnmarshal, if so, do that.  But maybe do after
-	// special casing for types?  I.e. strum special casing overrides
-	// TextUnmarshal?
-
-	// Custom parsing for certain types
-	switch v.Type() {
-	case timeType:
-		t, err := time.Parse(time.RFC3339, s)
-		if err != nil {
-			return decodingError(name, err)
-		}
-		v.Set(reflect.ValueOf(t))
-		return nil
-	}
-
-	switch v.Kind() {
-	case reflect.Bool:
-		switch strings.ToLower(s) {
-		case "true":
-			v.SetBool(true)
-		case "false":
-			v.SetBool(false)
-		default:
-			return decodingError(name, fmt.Errorf("error decoding '%s' as boolean", s))
-		}
-	case reflect.String:
-		v.SetString(s)
-	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		i, err := strconv.ParseInt(s, 0, v.Type().Bits())
-		if err != nil {
-			return decodingError(name, err)
-		}
-		v.SetInt(i)
-	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		i, err := strconv.ParseUint(s, 0, v.Type().Bits())
-		if err != nil {
-			return decodingError(name, err)
-		}
-		v.SetUint(i)
-	case reflect.Float32, reflect.Float64:
-		return decodingError(name, errors.New("float not yet supported"))
-	default:
-		return decodingError(name, errors.New("unsupported type"))
-	}
-
-	return nil
 }
