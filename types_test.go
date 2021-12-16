@@ -18,40 +18,35 @@ import (
 )
 
 func TestDecodeBool(t *testing.T) {
-	type boolean struct {
-		B bool
-	}
-
 	cases := []struct {
 		label       string
 		input       string
-		want        boolean
+		want        bool
 		errContains string
 	}{
 		{
 			label: "false",
 			input: "false",
-			want:  boolean{false},
+			want:  false,
 		},
 		{
 			label: "true",
 			input: "true",
-			want:  boolean{true},
+			want:  true,
 		},
 		{
 			label: "mixed case true",
 			input: "trUe",
-			want:  boolean{true},
+			want:  true,
 		},
 		{
 			label: "upper case false",
 			input: "FALSE",
-			want:  boolean{false},
+			want:  false,
 		},
 		{
 			label:       "invalid string",
 			input:       "yes",
-			want:        boolean{},
 			errContains: "error decoding",
 		},
 	}
@@ -61,7 +56,7 @@ func TestDecodeBool(t *testing.T) {
 		t.Run(c.label, func(t *testing.T) {
 			r := bytes.NewBufferString(c.input)
 			d := strum.NewDecoder(r)
-			var got boolean
+			var got bool
 			err := d.Decode(&got)
 			errContains(t, err, c.errContains, "decode error")
 			if err == nil {
@@ -235,25 +230,20 @@ func TestDecodeUints(t *testing.T) {
 }
 
 func TestDecodeDate(t *testing.T) {
-	type dates struct {
-		D time.Time
-	}
-
 	cases := []struct {
 		label       string
 		input       string
-		want        dates
+		want        time.Time
 		errContains string
 	}{
 		{
 			label: "RFC3339",
 			input: "2021-01-01T00:00:00Z",
-			want:  dates{time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC)},
+			want:  time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC),
 		},
 		{
 			label:       "invalid string",
 			input:       "not-a-date-string",
-			want:        dates{},
 			errContains: "cannot parse",
 		},
 	}
@@ -263,7 +253,7 @@ func TestDecodeDate(t *testing.T) {
 		t.Run(c.label, func(t *testing.T) {
 			r := bytes.NewBufferString(c.input)
 			d := strum.NewDecoder(r)
-			var got dates
+			var got time.Time
 			err := d.Decode(&got)
 			errContains(t, err, c.errContains, "decode error")
 			if err == nil {

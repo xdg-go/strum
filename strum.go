@@ -128,13 +128,21 @@ func (d *Decoder) Decode(v interface{}) error {
 }
 
 func (d *Decoder) decode(destValue reflect.Value) error {
+	// Handle certain types specially, not as their underlying data kind.
+	switch destValue.Type() {
+	case timeType:
+		return d.decodeSingleToken("time.Time", destValue)
+	}
+
 	switch destValue.Kind() {
-	case reflect.Struct:
-		return d.decodeStruct(destValue)
+	case reflect.Bool:
+		return d.decodeSingleToken("bool", destValue)
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		return d.decodeSingleToken("int", destValue)
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 		return d.decodeSingleToken("uint", destValue)
+	case reflect.Struct:
+		return d.decodeStruct(destValue)
 	default:
 		return fmt.Errorf("cannot Decode into pointer to %s", destValue.Kind())
 	}
