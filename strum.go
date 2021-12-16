@@ -5,8 +5,7 @@
 // a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
 // Package strum provides a string unmarshaler to convert line-oriented text
-// (such as from STDIN) into simple Go structs.  Fields may be of primitive
-// types:
+// (such as from STDIN) into simple Go types:
 //
 //  - strings
 //  - booleans ('true', 'false'; case insensitive)
@@ -18,6 +17,10 @@
 // Additionally, there is special support for certain types:
 //
 //  - time.Time (only RFC 3339 strings supported at the moment)
+//
+// strum also supports decoding into structs, but the fields must be
+// one of the supported simple types above. Recursive structs
+// are not supported.
 //
 // Field extraction defaults to whitespace-separated fields, but strum
 // supports using delimiters, regular expressions, or a custom tokenizer.
@@ -121,15 +124,25 @@ func (d *Decoder) Decode(v interface{}) error {
 		return fmt.Errorf("argument to Decode must be a pointer, not %s", argValue.Kind())
 	}
 
+	// XXX What if pointer is nil?
+
 	return d.decode(argValue.Elem())
 }
 
 func (d *Decoder) decode(destValue reflect.Value) error {
-	if destValue.Kind() != reflect.Struct {
-		return fmt.Errorf("argument to Decode must be a pointer to struct, not %s", destValue.Kind())
+	switch destValue.Kind() {
+	case reflect.Struct:
+		return d.decodeStruct(destValue)
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return d.decodeSingleToken("int", destValue)
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		return d.decodeSingleToken("uint", destValue)
+	default:
+		return fmt.Errorf("cannot Decode into pointer to %s", destValue.Kind())
 	}
+}
 
-	// XXX What if Nil?
+func (d *Decoder) decodeStruct(destValue reflect.Value) error {
 	tokens, err := d.Tokens()
 	if err != nil {
 		return err
@@ -145,13 +158,26 @@ func (d *Decoder) decode(destValue reflect.Value) error {
 			break
 		}
 		fieldName := destNS + "." + destType.Field(i).Name
-		err = decodeToField(fieldName, destValue.Field(i), tokens[i])
+		err = decodeToValue(fieldName, destValue.Field(i), tokens[i])
 		if err != nil {
 			return err
 		}
 	}
 
 	return nil
+}
+
+func (d *Decoder) decodeSingleToken(name string, destValue reflect.Value) error {
+	tokens, err := d.Tokens()
+	if err != nil {
+		return err
+	}
+
+	if len(tokens) != 1 {
+		return fmt.Errorf("decoding %s: expected 1 token, but found %d", name, len(tokens))
+	}
+
+	return decodeToValue(name, destValue, tokens[0])
 }
 
 func (d *Decoder) DecodeAll(v interface{}) error {
@@ -194,7 +220,7 @@ func decodingError(name string, err error) error {
 
 var timeType = reflect.TypeOf(time.Time{})
 
-func decodeToField(name string, v reflect.Value, s string) error {
+func decodeToValue(name string, v reflect.Value, s string) error {
 	// XXX here if it can TextUnmarshal, if so, do that.  But maybe do after
 	// special casing for types?  I.e. strum special casing overrides
 	// TextUnmarshal?

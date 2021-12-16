@@ -152,6 +152,94 @@ func TestDecode(t *testing.T) {
 	}
 }
 
+func TestDecodeIntContainers(t *testing.T) {
+	lines := []string{
+		"42",
+		"23",
+		"36",
+		"81",
+	}
+
+	ints := []int{42, 23, 36, 81}
+
+	r := bytes.NewBufferString(strings.Join(lines, "\n"))
+	d := strum.NewDecoder(r)
+
+	var i int
+	var output []int
+
+	err := d.Decode(&i)
+	if err != nil {
+		t.Fatal(err)
+	}
+	isWantGot(t, ints[0], i, "Decode to int reference")
+
+	err = d.DecodeAll(&output)
+	if err != nil {
+		t.Fatal(err)
+	}
+	isWantGot(t, ints[1:], output, "Decode to int slice")
+}
+
+func TestDecodeIntContainersErrors(t *testing.T) {
+	cases := []struct {
+		label       string
+		input       string
+		errContains string
+	}{
+		{
+			label:       "no tokens",
+			input:       "\n",
+			errContains: "decoding int: expected 1 token, but found 0",
+		},
+		{
+			label:       "two tokens",
+			input:       "42 23",
+			errContains: "decoding int: expected 1 token, but found 2",
+		},
+	}
+
+	for _, c := range cases {
+		c := c
+		t.Run(c.label, func(t *testing.T) {
+			r := bytes.NewBufferString(c.input)
+			d := strum.NewDecoder(r)
+			var i int
+			err := d.Decode(&i)
+			errContains(t, err, c.errContains, "Decode error")
+		})
+	}
+}
+
+func TestDecodeUintContainers(t *testing.T) {
+	lines := []string{
+		"42",
+		"23",
+		"36",
+		"81",
+	}
+
+	uints := []uint8{42, 23, 36, 81}
+
+	r := bytes.NewBufferString(strings.Join(lines, "\n"))
+	d := strum.NewDecoder(r)
+
+	var u uint8
+	var output []uint8
+
+	err := d.Decode(&u)
+	if err != nil {
+		t.Fatal(err)
+	}
+	isWantGot(t, uints[0], u, "Decode to int reference")
+
+	err = d.DecodeAll(&output)
+	if err != nil {
+		t.Fatal(err)
+	}
+	isWantGot(t, uints[1:], output, "Decode to int slice")
+}
+
 func TestDecodeAll(t *testing.T) {
 	type person struct {
 		Name   string
@@ -476,7 +564,7 @@ func TestBadTargets(t *testing.T) {
 	{
 		var v string
 		err := d.Decode(&v)
-		errContains(t, err, "argument to Decode must be a pointer to struct, not", "Decode with non-pointer-to-struct")
+		errContains(t, err, "cannot Decode into pointer to string", "Decode with non-pointer-to-struct")
 
 		var output map[string]string
 		err = d.DecodeAll(&output)
