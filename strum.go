@@ -9,7 +9,8 @@
 //
 //  - strings
 //  - booleans ('true', 'false'; case insensitive)
-//  - integers (signed and unsigned)
+//  - integers (signed and unsigned, all widths)
+//  - floats (32-bit and 64-bit)
 //
 // For integers, all Go integer literal formats are supported, including
 // base prefixes (`0xff`) and underscores (`1_000_000`).
@@ -141,6 +142,8 @@ func (d *Decoder) decode(destValue reflect.Value) error {
 		return d.decodeSingleToken("int", destValue)
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 		return d.decodeSingleToken("uint", destValue)
+	case reflect.Float32, reflect.Float64:
+		return d.decodeSingleToken("float", destValue)
 	case reflect.Struct:
 		return d.decodeStruct(destValue)
 	default:

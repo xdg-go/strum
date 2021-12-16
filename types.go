@@ -62,7 +62,11 @@ func decodeToValue(name string, v reflect.Value, s string) error {
 		}
 		v.SetUint(i)
 	case reflect.Float32, reflect.Float64:
-		return decodingError(name, errors.New("float not yet supported"))
+		f, err := strconv.ParseFloat(s, v.Type().Bits())
+		if err != nil {
+			return decodingError(name, err)
+		}
+		v.SetFloat(f)
 	default:
 		return decodingError(name, errors.New("unsupported type"))
 	}

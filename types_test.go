@@ -229,6 +229,77 @@ func TestDecodeUints(t *testing.T) {
 	}
 }
 
+func TestDecodeFloats(t *testing.T) {
+	type floats struct {
+		F32 float32
+		F64 float64
+	}
+
+	cases := []struct {
+		label       string
+		input       string
+		want        floats
+		errContains string
+	}{
+		{
+			label: "all zeros",
+			input: "0 0",
+			want:  floats{},
+		},
+		{
+			label: "positive decimal",
+			input: "1.2 2.3",
+			want:  floats{1.2, 2.3},
+		},
+		{
+			label: "negative decimal",
+			input: "-1.2 -2.3",
+			want:  floats{-1.2, -2.3},
+		},
+		{
+			label: "specials",
+			input: "-Inf Inf",
+			want:  floats{float32(math.Inf(-1)), math.Inf(1)},
+		},
+		{
+			label: "maxfloats",
+			input: "3.40282346638528859811704183484516925440e+38 1.79769313486231570814527423731704356798070e+308",
+			want:  floats{math.MaxFloat32, math.MaxFloat64},
+		},
+		{
+			label: "small non-zero floats",
+			input: "1.401298464324817070923729583289916131280e-45 4.9406564584124654417656879286822137236505980e-324",
+			want:  floats{math.SmallestNonzeroFloat32, math.SmallestNonzeroFloat64},
+		},
+		{
+			label:       "out of range float32",
+			input:       "1.0 3.41e310",
+			want:        floats{},
+			errContains: "value out of range",
+		},
+		{
+			label:       "invalid syntax float32",
+			input:       "1.0 3.41+e38",
+			want:        floats{},
+			errContains: "invalid syntax",
+		},
+	}
+
+	for _, c := range cases {
+		c := c
+		t.Run(c.label, func(t *testing.T) {
+			r := bytes.NewBufferString(c.input)
+			d := strum.NewDecoder(r)
+			var got floats
+			err := d.Decode(&got)
+			errContains(t, err, c.errContains, "decode error")
+			if err == nil {
+				isWantGot(t, c.want, got, "decode result")
+			}
+		})
+	}
+}
+
 func TestDecodeDate(t *testing.T) {
 	cases := []struct {
 		label       string

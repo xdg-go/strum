@@ -238,6 +238,35 @@ func TestDecodeUintContainers(t *testing.T) {
 	isWantGot(t, uints[1:], output, "Decode to int slice")
 }
 
+func TestDecodeFloatContainers(t *testing.T) {
+	lines := []string{
+		"4.2",
+		"2.3",
+		"3.6",
+		"8.1",
+	}
+
+	floats := []float64{4.2, 2.3, 3.6, 8.1}
+
+	r := bytes.NewBufferString(strings.Join(lines, "\n"))
+	d := strum.NewDecoder(r)
+
+	var u float64
+	var output []float64
+
+	err := d.Decode(&u)
+	if err != nil {
+		t.Fatal(err)
+	}
+	isWantGot(t, floats[0], u, "Decode to float reference")
+
+	err = d.DecodeAll(&output)
+	if err != nil {
+		t.Fatal(err)
+	}
+	isWantGot(t, floats[1:], output, "Decode to float slice")
+}
+
 func TestDecodeBoolContainers(t *testing.T) {
 	lines := []string{
 		"42",
