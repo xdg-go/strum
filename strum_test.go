@@ -364,10 +364,27 @@ func TestBadTargets(t *testing.T) {
 	{
 		var v string
 		err := d.Decode(&v)
-		errContains(t, err, "cannot Decode into pointer to string", "Decode with non-pointer-to-struct")
+		errContains(t, err, "cannot decode into type string (kind string)", "Decode with non-pointer-to-struct")
 
 		var output map[string]string
 		err = d.DecodeAll(&output)
-		errContains(t, err, "argument to DecodeAll must be a pointer to slice of struct, not", "DecodeAll with non-pointer-to-slice")
+		errContains(t, err, "argument to DecodeAll must be a pointer to slice, not", "DecodeAll with non-pointer-to-slice")
+	}
+
+	// nil
+	{
+		err := d.Decode(nil)
+		errContains(t, err, "argument to Decode must be a non-nil pointer", "Decode literal nil")
+
+		var vp *string
+		err = d.Decode(vp)
+		errContains(t, err, "argument to Decode must be a non-nil pointer", "Decode nil pointer")
+
+		err = d.DecodeAll(nil)
+		errContains(t, err, "argument to DecodeAll must be a non-nil pointer", "DecodeAll literal nil")
+
+		var xs *[]string
+		err = d.DecodeAll(xs)
+		errContains(t, err, "argument to DecodeAll must be a non-nil pointer", "DecodeAll nil pointer")
 	}
 }

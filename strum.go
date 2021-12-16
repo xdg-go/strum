@@ -117,13 +117,19 @@ func (d *Decoder) readline() (string, error) {
 // a struct.  If the input has fewer tokens than fields in the struct, the
 // extra fields will be left with zero values.
 func (d *Decoder) Decode(v interface{}) error {
+	if v == nil {
+		return fmt.Errorf("argument to Decode must be a non-nil pointer")
+	}
+
 	argValue := reflect.ValueOf(v)
 
 	if argValue.Kind() != reflect.Ptr {
 		return fmt.Errorf("argument to Decode must be a pointer, not %s", argValue.Kind())
 	}
 
-	// XXX What if pointer is nil?
+	if argValue.IsNil() {
+		return fmt.Errorf("argument to Decode must be a non-nil pointer")
+	}
 
 	return d.decode(argValue.Elem())
 }
@@ -147,7 +153,7 @@ func (d *Decoder) decode(destValue reflect.Value) error {
 	case reflect.Struct:
 		return d.decodeStruct(destValue)
 	default:
-		return fmt.Errorf("cannot Decode into pointer to %s", destValue.Kind())
+		return fmt.Errorf("cannot decode into type %s (kind %s)", destValue.Type(), destValue.Kind())
 	}
 }
 
@@ -190,17 +196,26 @@ func (d *Decoder) decodeSingleToken(name string, destValue reflect.Value) error 
 }
 
 func (d *Decoder) DecodeAll(v interface{}) error {
+	if v == nil {
+		return fmt.Errorf("argument to DecodeAll must be a non-nil pointer")
+	}
+
 	argValue := reflect.ValueOf(v)
 
-	// XXX What if Nil?
 	if argValue.Kind() != reflect.Ptr {
 		return fmt.Errorf("argument to DecodeAll must be a pointer, not %s", argValue.Kind())
 	}
 
+	if argValue.IsNil() {
+		return fmt.Errorf("argument to DecodeAll must be a non-nil pointer")
+	}
+
 	sliceValue := argValue.Elem()
 	if sliceValue.Kind() != reflect.Slice {
-		return fmt.Errorf("argument to DecodeAll must be a pointer to slice of struct, not %s", sliceValue.Kind())
+		return fmt.Errorf("argument to DecodeAll must be a pointer to slice, not %s", sliceValue.Kind())
 	}
+
+	// XXX validate slice element type?
 
 	sliceType := sliceValue.Type()
 
