@@ -272,3 +272,39 @@ func TestDecodeDate(t *testing.T) {
 		})
 	}
 }
+
+func TestDecodeStruct(t *testing.T) {
+	type person struct {
+		Name   string
+		Age    int
+		Active bool
+		Date   time.Time
+	}
+
+	cases := []struct {
+		label       string
+		input       string
+		want        person
+		errContains string
+	}{
+		{
+			label: "",
+			input: "John 42 true 2021-01-01T00:00:00Z",
+			want:  person{"John", 42, true, time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC)},
+		},
+	}
+
+	for _, c := range cases {
+		c := c
+		t.Run(c.label, func(t *testing.T) {
+			r := bytes.NewBufferString(c.input)
+			d := strum.NewDecoder(r)
+			var got person
+			err := d.Decode(&got)
+			errContains(t, err, c.errContains, "decode error")
+			if err == nil {
+				isWantGot(t, c.want, got, "decode result")
+			}
+		})
+	}
+}
