@@ -9,7 +9,6 @@ package strum_test
 import (
 	"bytes"
 	"fmt"
-	"io"
 	"log"
 	"strings"
 	"time"
@@ -17,7 +16,7 @@ import (
 	"github.com/xdg-go/strum"
 )
 
-func ExampleDecoder_Decode() {
+func ExampleDecoder_DecodeAll_struct() {
 	type person struct {
 		Name   string
 		Age    int
@@ -33,19 +32,41 @@ func ExampleDecoder_Decode() {
 	r := bytes.NewBufferString(strings.Join(lines, "\n"))
 	d := strum.NewDecoder(r)
 
-	for {
-		var p person
-		err := d.Decode(&p)
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			log.Fatalf("decoding error: %v", err)
-		}
+	var people []person
+	err := d.DecodeAll(&people)
+	if err != nil {
+		log.Fatalf("decoding error: %v", err)
+	}
+
+	for _, p := range people {
 		fmt.Printf("%v\n", p)
 	}
 
 	// Output:
 	// {John 42 true 2020-03-01 00:00:00 +0000 UTC}
 	// {Jane 23 false 2022-02-22 00:00:00 +0000 UTC}
+}
+
+func ExampleDecoder_DecodeAll_ints() {
+	lines := []string{
+		"42",
+		"23",
+	}
+
+	r := bytes.NewBufferString(strings.Join(lines, "\n"))
+	d := strum.NewDecoder(r)
+
+	var xs []int
+	err := d.DecodeAll(&xs)
+	if err != nil {
+		log.Fatalf("decoding error: %v", err)
+	}
+
+	for _, x := range xs {
+		fmt.Printf("%d\n", x)
+	}
+
+	// Output:
+	// 42
+	// 23
 }

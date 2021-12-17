@@ -6,17 +6,49 @@
 [![codecov](https://codecov.io/gh/xdg-go/strum/branch/master/graph/badge.svg)](https://codecov.io/gh/xdg-go/strum)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-The strum package provides line-oriented text decoding to simple Go structs.
+The strum package provides line-oriented text decoding into simple Go
+variables and structs.
 
 * Splits on whitespace, a delimiter, a regular expression, or a custom
   tokenizer.
-* Supports basic primitive types: strings, booleans, ints, uints
+* Supports basic primitive types: strings, booleans, ints, uints, floats,
+  and (non-recursive) structs.
 * Supports decoding RFC 3399 into `time.Time`
 
 # Examples
 
+## Decoding into a slice of integers
+
 ```golang
-func ExampleDecoder_Decode() {
+func ExampleDecoder_DecodeAll_ints() {
+	lines := []string{
+		"42",
+		"23",
+	}
+
+	r := bytes.NewBufferString(strings.Join(lines, "\n"))
+	d := strum.NewDecoder(r)
+
+	var xs []int
+	err := d.DecodeAll(&xs)
+	if err != nil {
+		log.Fatalf("decoding error: %v", err)
+	}
+
+	for _, x := range xs {
+		fmt.Printf("%d\n", x)
+	}
+
+	// Output:
+	// 42
+	// 23
+}
+```
+
+## Decoding into a slice of structs
+
+```golang
+func ExampleDecoder_DecodeAll_struct() {
 	type person struct {
 		Name   string
 		Age    int
@@ -32,15 +64,13 @@ func ExampleDecoder_Decode() {
 	r := bytes.NewBufferString(strings.Join(lines, "\n"))
 	d := strum.NewDecoder(r)
 
-	for {
-		var p person
-		err := d.Decode(&p)
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			log.Fatalf("decoding error: %v", err)
-		}
+	var people []person
+	err := d.DecodeAll(&people)
+	if err != nil {
+		log.Fatalf("decoding error: %v", err)
+	}
+
+	for _, p := range people {
 		fmt.Printf("%v\n", p)
 	}
 
