@@ -325,6 +325,40 @@ func TestDecodeStringContainers(t *testing.T) {
 	isWantGot(t, xs[1:], output, "Decode to string slice")
 }
 
+func TestDecodeSliceOfBool(t *testing.T) {
+	cases := []struct {
+		label       string
+		input       string
+		want        []bool
+		errContains string
+	}{
+		{
+			label: "false true",
+			input: "false true",
+			want:  []bool{false, true},
+		},
+		{
+			label: "false junk",
+			input: "false junk",
+			want:  []bool{false, true},
+		},
+	}
+
+	for _, c := range cases {
+		c := c
+		t.Run(c.label, func(t *testing.T) {
+			r := bytes.NewBufferString(c.input)
+			d := strum.NewDecoder(r)
+			var got []bool
+			err := d.Decode(&got)
+			errContains(t, err, c.errContains, "decode error")
+			if err == nil {
+				isWantGot(t, c.want, got, "decode result")
+			}
+		})
+	}
+}
+
 func TestDecodeAll(t *testing.T) {
 	type person struct {
 		Name   string

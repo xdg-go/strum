@@ -161,6 +161,8 @@ func (d *Decoder) decode(destValue reflect.Value) error {
 		return d.decodeSingleToken("float", destValue)
 	case reflect.Struct:
 		return d.decodeStruct(destValue)
+	case reflect.Slice:
+		return d.decodeSlice(destValue)
 	default:
 		return fmt.Errorf("cannot decode into type %s (kind %s)", destValue.Type(), destValue.Kind())
 	}
@@ -186,6 +188,30 @@ func (d *Decoder) decodeStruct(destValue reflect.Value) error {
 		if err != nil {
 			return err
 		}
+	}
+
+	return nil
+}
+
+func (d *Decoder) decodeSlice(sliceValue reflect.Value) error {
+	// XXX do we need to validate the slice types are valid?
+
+	tokens, err := d.Tokens()
+	if err != nil {
+		return err
+	}
+
+	// XXX if slice is nil, initialize it?
+
+	sliceType := sliceValue.Type()
+
+	for i, s := range tokens {
+		v := reflect.New(sliceType.Elem()).Elem()
+		err := decodeToValue(fmt.Sprintf("element %d", i), v, s)
+		if err != nil {
+			return err
+		}
+		sliceValue.Set(reflect.Append(sliceValue, v))
 	}
 
 	return nil

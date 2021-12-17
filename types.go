@@ -15,6 +15,7 @@ import (
 	"time"
 )
 
+// XXX this needs to be fixed not to be field-specific
 func decodingError(name string, err error) error {
 	return fmt.Errorf("error decoding to field '%s': %w", name, err)
 }
@@ -68,6 +69,7 @@ func decodeToValue(name string, v reflect.Value, s string) error {
 		}
 		v.SetFloat(f)
 	default:
+		// XXX should name the type
 		return decodingError(name, errors.New("unsupported type"))
 	}
 
