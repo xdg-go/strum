@@ -27,11 +27,14 @@
 // a single token, except for `string` which receives the whole line without
 // tokenization (excluding any newline character).
 //
-// strum also supports decoding into structs, but the fields must be one of the
+// strum supports decoding into structs, but the fields must be one of the
 // supported simple types above.  Recursive structs are not supported.  When
 // decoding to a struct type, tokens from the line are decoded to struct fields
 // in order.  If the input has fewer tokens than fields in the struct, the extra
 // fields will be left with zero values.
+//
+// strum supports decoding into a slice of supported types, excluding structs.
+// Each token will be converted to an element of the slice.
 package strum
 
 import (
