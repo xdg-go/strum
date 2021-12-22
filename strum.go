@@ -194,14 +194,14 @@ func (d *Decoder) decodeStruct(destValue reflect.Value) error {
 }
 
 func (d *Decoder) decodeSlice(sliceValue reflect.Value) error {
-	// XXX do we need to validate the slice types are valid?
+	if !isDecodableValue(reflect.New(sliceValue.Type().Elem()).Elem()) {
+		return fmt.Errorf("decoding to this slice type not supported: %s", sliceValue.Type())
+	}
 
 	tokens, err := d.Tokens()
 	if err != nil {
 		return err
 	}
-
-	// XXX if slice is nil, initialize it?
 
 	sliceType := sliceValue.Type()
 

@@ -338,9 +338,9 @@ func TestDecodeSliceOfBool(t *testing.T) {
 			want:  []bool{false, true},
 		},
 		{
-			label: "false junk",
-			input: "false junk",
-			want:  []bool{false, true},
+			label:       "false junk",
+			input:       "false junk",
+			errContains: "error decoding",
 		},
 	}
 
@@ -350,6 +350,40 @@ func TestDecodeSliceOfBool(t *testing.T) {
 			r := bytes.NewBufferString(c.input)
 			d := strum.NewDecoder(r)
 			var got []bool
+			err := d.Decode(&got)
+			errContains(t, err, c.errContains, "decode error")
+			if err == nil {
+				isWantGot(t, c.want, got, "decode result")
+			}
+		})
+	}
+}
+
+func TestDecodeSliceOfString(t *testing.T) {
+	cases := []struct {
+		label       string
+		input       string
+		want        []string
+		errContains string
+	}{
+		{
+			label: "false true",
+			input: "false true",
+			want:  []string{"false", "true"},
+		},
+		{
+			label: "false junk",
+			input: "false junk",
+			want:  []string{"false", "junk"},
+		},
+	}
+
+	for _, c := range cases {
+		c := c
+		t.Run(c.label, func(t *testing.T) {
+			r := bytes.NewBufferString(c.input)
+			d := strum.NewDecoder(r)
+			var got []string
 			err := d.Decode(&got)
 			errContains(t, err, c.errContains, "decode error")
 			if err == nil {
@@ -449,5 +483,12 @@ func TestBadTargets(t *testing.T) {
 		var xs *[]string
 		err = d.DecodeAll(xs)
 		errContains(t, err, "argument to DecodeAll must be a non-nil pointer", "DecodeAll nil pointer")
+	}
+
+	// slice of struct
+	{
+		var sp []person
+		err := d.Decode(&sp)
+		errContains(t, err, "decoding to this slice type not supported: []strum_test.person", "slice of struct")
 	}
 }

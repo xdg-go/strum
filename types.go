@@ -22,6 +22,30 @@ func decodingError(name string, err error) error {
 
 var timeType = reflect.TypeOf(time.Time{})
 
+// isDecodableValue duplicates the logic tree of `decodeToValue` to allow input
+// validation before decoding is called. This supports better error messages.
+func isDecodableValue(v reflect.Value) bool {
+	switch v.Type() {
+	case timeType:
+		return true
+	}
+
+	switch v.Kind() {
+	case reflect.Bool:
+		return true
+	case reflect.String:
+		return true
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return true
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		return true
+	case reflect.Float32, reflect.Float64:
+		return true
+	default:
+		return false
+	}
+}
+
 func decodeToValue(name string, v reflect.Value, s string) error {
 	// XXX here if it can TextUnmarshal, if so, do that.  But maybe do after
 	// special casing for types?  I.e. strum special casing overrides
