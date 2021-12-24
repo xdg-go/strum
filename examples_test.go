@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"os"
 	"regexp"
 	"strings"
 	"time"
@@ -152,4 +153,41 @@ func ExampleDecoder_WithSplitOn() {
 
 	// Output:
 	// {Doe John}
+}
+
+func Example_synopsis() {
+	var err error
+	d := strum.NewDecoder(os.Stdin)
+
+	// Decode a line to a single int
+	var x int
+	err = d.Decode(&x)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Decode a line to a slice of int
+	var xs []int
+	err = d.Decode(&xs)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Decode a line to a struct
+	type person struct {
+		Name string
+		Age  int
+	}
+	var p person
+	err = d.Decode(&p)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Decode all lines to a slice of struct
+	var people []person
+	err = d.DecodeAll(&people)
+	if err != nil {
+		log.Fatal(err)
+	}
 }

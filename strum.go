@@ -23,18 +23,18 @@
 // Tokenization defaults to whitespace-separated fields, but strum supports
 // using delimiters, regular expressions, or a custom tokenizer.
 //
-// When decoding to simple variables of the types above, the line must only have
-// a single token, except for `string` which receives the whole line without
-// tokenization (excluding any newline character).
+// When decoding a line to simple variables of the types above, the line must
+// only have a single token, except for `string` which receives the whole line
+// without tokenization (excluding any newline character).
 //
-// strum supports decoding into structs, but the fields must be one of the
-// supported simple types above.  Recursive structs are not supported.  When
+// strum supports decoding a line into a struct, but the fields must be one of
+// the supported simple types above.  Recursive structs are not supported.  When
 // decoding to a struct type, tokens from the line are decoded to struct fields
 // in order.  If the input has fewer tokens than fields in the struct, the extra
 // fields will be left with zero values.
 //
-// strum supports decoding into a slice of supported types, excluding structs.
-// Each token will be converted to an element of the slice.
+// strum supports decoding a line into a slice of supported types (excluding
+// structs).  Each token will be converted to an element of the slice.
 package strum
 
 import (
