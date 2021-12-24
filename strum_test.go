@@ -104,6 +104,18 @@ func TestRegexpBad(t *testing.T) {
 	errContains(t, err, "regexp has no subexpressions", "bad regexp")
 }
 
+func TestRegexpNoMatch(t *testing.T) {
+	text := "John 23x42\n"
+
+	r := bytes.NewBufferString(text)
+
+	re := regexp.MustCompile(`^(\d+)`)
+	d := strum.NewDecoder(r).WithTokenRegexp(re)
+
+	_, err := d.Tokens()
+	errContains(t, err, "regexp failed to match line", "regexp didn't match")
+}
+
 func TestDecode(t *testing.T) {
 	type person struct {
 		Name   string
