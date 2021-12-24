@@ -92,6 +92,18 @@ func TestRegexp(t *testing.T) {
 	isWantGot(t, expect, words, "tokenizing with regexp")
 }
 
+func TestRegexpBad(t *testing.T) {
+	text := "John 23x42\n"
+
+	r := bytes.NewBufferString(text)
+
+	re := regexp.MustCompile(`^.*$`)
+	d := strum.NewDecoder(r).WithTokenRegexp(re)
+
+	_, err := d.Tokens()
+	errContains(t, err, "regexp has no subexpressions", "bad regexp")
+}
+
 func TestDecode(t *testing.T) {
 	type person struct {
 		Name   string

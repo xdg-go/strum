@@ -79,7 +79,9 @@ func (d *Decoder) WithTokenizer(t Tokenizer) *Decoder {
 
 // WithTokenRegexp modifies a Decoder to use a regular expression to extract
 // string fields.  The regular expression is called with `FindStringSubmatches`
-// for each line of input, so it must encompass an entire line of input.
+// for each line of input, so it must encompass an entire line of input.  If the
+// line fails to match or if the regular expression has no subexpressions, an
+// error is returned.
 func (d *Decoder) WithTokenRegexp(re *regexp.Regexp) *Decoder {
 	return d.WithTokenizer(
 		func(s string) ([]string, error) {
@@ -87,10 +89,9 @@ func (d *Decoder) WithTokenRegexp(re *regexp.Regexp) *Decoder {
 			if xs == nil {
 				return []string{}, errors.New("regexp failed to match line " + s)
 			}
-			// If the regexp had no submatches, then there are no tokens.
-			// XXX Should this be an error?
+			// A regexp without capture expressions is an error.
 			if len(xs) == 1 {
-				return []string{}, nil
+				return []string{}, errors.New("regexp has no subexpressions")
 			}
 			// Drop the full match and return only submatches.
 			return xs[1:], nil
