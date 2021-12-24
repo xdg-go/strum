@@ -9,12 +9,47 @@ package strum_test
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"log"
+	"regexp"
 	"strings"
 	"time"
 
 	"github.com/xdg-go/strum"
 )
+
+func ExampleDecoder_Decode_struct() {
+	type person struct {
+		Name   string
+		Age    int
+		Active bool
+		Joined time.Time
+	}
+
+	lines := []string{
+		"John 42 true  2020-03-01T00:00:00Z",
+		"Jane 23 false 2022-02-22T00:00:00Z",
+	}
+
+	r := bytes.NewBufferString(strings.Join(lines, "\n"))
+	d := strum.NewDecoder(r)
+
+	for {
+		var p person
+		err := d.Decode(&p)
+		if err == io.EOF {
+			return
+		}
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println(p)
+	}
+
+	// Output:
+	// {John 42 true 2020-03-01 00:00:00 +0000 UTC}
+	// {Jane 23 false 2022-02-22 00:00:00 +0000 UTC}
+}
 
 func ExampleDecoder_DecodeAll_struct() {
 	type person struct {
@@ -69,4 +104,52 @@ func ExampleDecoder_DecodeAll_ints() {
 	// Output:
 	// 42
 	// 23
+}
+
+func ExampleDecoder_WithTokenRegexp() {
+	type jeans struct {
+		Color  string
+		Waist  int
+		Inseam int
+	}
+
+	text := "Blue 36x32"
+	r := bytes.NewBufferString(text)
+
+	re := regexp.MustCompile(`^(\S+)\s+(\d+)x(\d+)`)
+	d := strum.NewDecoder(r).WithTokenRegexp(re)
+
+	var j jeans
+	err := d.Decode(&j)
+	if err != nil && err != io.EOF {
+		log.Fatal(err)
+	}
+
+	fmt.Println(j)
+
+	// Output:
+	// {Blue 36 32}
+}
+
+func ExampleDecoder_WithSplitOn() {
+	type person struct {
+		Last  string
+		First string
+	}
+
+	text := "Doe,John"
+	r := bytes.NewBufferString(text)
+
+	d := strum.NewDecoder(r).WithSplitOn(",")
+
+	var p person
+	err := d.Decode(&p)
+	if err != nil && err != io.EOF {
+		log.Fatal(err)
+	}
+
+	fmt.Println(p)
+
+	// Output:
+	// {Doe John}
 }
