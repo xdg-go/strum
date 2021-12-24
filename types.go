@@ -16,15 +16,18 @@ import (
 
 // XXX this needs to be fixed not to be field-specific
 func decodingError(name string, err error) error {
-	return fmt.Errorf("error decoding to field '%s': %w", name, err)
+	return fmt.Errorf("error decoding to %s: %w", name, err)
 }
 
+var durationType = reflect.TypeOf(time.Duration(0))
 var timeType = reflect.TypeOf(time.Time{})
 
 // isDecodableValue duplicates the logic tree of `decodeToValue` to allow input
 // validation before decoding is called. This supports better error messages.
 func isDecodableValue(v reflect.Value) bool {
 	switch v.Type() {
+	case durationType:
+		return true
 	case timeType:
 		return true
 	}
@@ -52,6 +55,13 @@ func decodeToValue(name string, v reflect.Value, s string) error {
 
 	// Custom parsing for certain types
 	switch v.Type() {
+	case durationType:
+		t, err := time.ParseDuration(s)
+		if err != nil {
+			return decodingError(name, err)
+		}
+		v.Set(reflect.ValueOf(t))
+		return nil
 	case timeType:
 		t, err := time.Parse(time.RFC3339, s)
 		if err != nil {

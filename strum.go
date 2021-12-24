@@ -18,6 +18,7 @@
 //
 // Additionally, there is special support for certain types:
 //
+//  - time.Duration
 //  - time.Time (only RFC 3339 strings supported at the moment)
 //
 // Tokenization defaults to whitespace-separated fields, but strum supports
@@ -154,6 +155,8 @@ func (d *Decoder) Decode(v interface{}) error {
 func (d *Decoder) decode(destValue reflect.Value) error {
 	// Handle certain types specially, not as their underlying data kind.
 	switch destValue.Type() {
+	case durationType:
+		return d.decodeSingleToken("time.Duration", destValue)
 	case timeType:
 		return d.decodeSingleToken("time.Time", destValue)
 	}

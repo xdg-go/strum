@@ -368,6 +368,45 @@ func TestDecodeDate(t *testing.T) {
 	}
 }
 
+func TestDecodeDuration(t *testing.T) {
+	s5, err := time.ParseDuration("5s")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	cases := []struct {
+		label       string
+		input       string
+		want        time.Duration
+		errContains string
+	}{
+		{
+			label: "5s",
+			input: "5s",
+			want:  s5,
+		},
+		{
+			label:       "invalid duration",
+			input:       "not-a-duration-string",
+			errContains: "invalid duration",
+		},
+	}
+
+	for _, c := range cases {
+		c := c
+		t.Run(c.label, func(t *testing.T) {
+			r := bytes.NewBufferString(c.input)
+			d := strum.NewDecoder(r)
+			var got time.Duration
+			err := d.Decode(&got)
+			errContains(t, err, c.errContains, "decode error")
+			if err == nil {
+				isWantGot(t, c.want, got, "decode result")
+			}
+		})
+	}
+}
+
 func TestDecodeStruct(t *testing.T) {
 	type person struct {
 		Name   string

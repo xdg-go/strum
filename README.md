@@ -13,6 +13,7 @@ variables and structs.
   tokenizer.
 * Supports basic primitive types: strings, booleans, ints, uints, floats.
 * Supports decoding RFC 3399 into `time.Time`
+* Supports decoding time.Duration
 * Decodes a line into a single variable, a slice, or a struct.
 * Decodes all lines into a slice of the above.
 
