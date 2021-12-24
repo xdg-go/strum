@@ -23,6 +23,12 @@
 // Tokenization defaults to whitespace-separated fields, but strum supports
 // using delimiters, regular expressions, or a custom tokenizer.
 //
+// strum provides three ways to decode a single line of text
+//
+//  - single token to a single variable of a supported type
+//  - all tokens to a slice of a supported type
+//  - all tokens to a struct composed of supported types
+//
 // When decoding a line to simple variables of the types above, the line must
 // only have a single token, except for `string` which receives the whole line
 // without tokenization (excluding any newline character).
@@ -31,10 +37,10 @@
 // the supported simple types above.  Recursive structs are not supported.  When
 // decoding to a struct type, tokens from the line are decoded to struct fields
 // in order.  If the input has fewer tokens than fields in the struct, the extra
-// fields will be left with zero values.
+// fields will be left with zero values.  If the input has more tokens than the
+// struct has fields, an error is returned.
 //
-// strum supports decoding a line into a slice of supported types (excluding
-// structs).  Each token will be converted to an element of the slice.
+// strum provides `DecodeAll` to decode all lines at once.
 package strum
 
 import (
@@ -184,7 +190,7 @@ func (d *Decoder) decodeStruct(destValue reflect.Value) error {
 	numFields := destValue.NumField()
 	for i := range tokens {
 		if i >= numFields {
-			break
+			return fmt.Errorf("too many tokens for struct %s", destValue.Type())
 		}
 		fieldName := destNS + "." + destType.Field(i).Name
 		err = decodeToValue(fieldName, destValue.Field(i), tokens[i])

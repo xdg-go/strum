@@ -372,8 +372,8 @@ func TestDecodeStruct(t *testing.T) {
 	type person struct {
 		Name   string
 		Age    int
-		Active bool
 		Date   time.Time
+		Active bool
 	}
 
 	cases := []struct {
@@ -383,9 +383,19 @@ func TestDecodeStruct(t *testing.T) {
 		errContains string
 	}{
 		{
-			label: "",
-			input: "John 42 true 2021-01-01T00:00:00Z",
-			want:  person{"John", 42, true, time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC)},
+			label: "tokens == fields",
+			input: "John 42 2021-01-01T00:00:00Z true",
+			want:  person{"John", 42, time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC), true},
+		},
+		{
+			label: "tokens < fields",
+			input: "John 42 2021-01-01T00:00:00Z",
+			want:  person{"John", 42, time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC), false},
+		},
+		{
+			label:       "tokens > fields",
+			input:       "John 42 2021-01-01T00:00:00Z true 87",
+			errContains: "too many tokens for struct strum_test.person",
 		},
 	}
 
