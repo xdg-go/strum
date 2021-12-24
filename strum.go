@@ -174,7 +174,7 @@ func (d *Decoder) decode(destValue reflect.Value) error {
 	case reflect.Slice:
 		return d.decodeSlice(destValue)
 	default:
-		return fmt.Errorf("cannot decode into type %s (kind %s)", destValue.Type(), destValue.Kind())
+		return fmt.Errorf("cannot decode into type %s", destValue.Type())
 	}
 }
 

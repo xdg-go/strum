@@ -485,7 +485,7 @@ func TestBadTargets(t *testing.T) {
 	{
 		var v complex128
 		err := d.Decode(&v)
-		errContains(t, err, "cannot decode into type complex128 (kind complex128)", "Decode with pointer to unsupported type")
+		errContains(t, err, "cannot decode into type complex128", "Decode with pointer to unsupported type")
 
 		var output map[string]string
 		err = d.DecodeAll(&output)

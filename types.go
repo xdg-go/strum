@@ -7,7 +7,6 @@
 package strum
 
 import (
-	"errors"
 	"fmt"
 	"reflect"
 	"strconv"
@@ -93,8 +92,7 @@ func decodeToValue(name string, v reflect.Value, s string) error {
 		}
 		v.SetFloat(f)
 	default:
-		// XXX should name the type
-		return decodingError(name, errors.New("unsupported type"))
+		return decodingError(name, fmt.Errorf("unsupported type %s", v.Type()))
 	}
 
 	return nil

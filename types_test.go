@@ -413,3 +413,16 @@ func TestDecodeStruct(t *testing.T) {
 		})
 	}
 }
+
+func TestUnsupportedType(t *testing.T) {
+	r := bytes.NewBufferString("123")
+	d := strum.NewDecoder(r)
+
+	// Decode to struct has a deep type check
+	type unsupported struct {
+		C complex128
+	}
+	var u unsupported
+	err := d.Decode(&u)
+	errContains(t, err, "unsupported type complex128", "unsupported")
+}
