@@ -7,13 +7,14 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
 The strum package provides line-oriented text decoding into simple Go
-variables and structs.
+variables, slices, and structs.
 
 * Splits on whitespace, a delimiter, a regular expression, or a custom
   tokenizer.
 * Supports basic primitive types: strings, booleans, ints, uints, floats.
-* Supports decoding RFC 3399 into `time.Time`
-* Supports decoding time.Duration
+* Supports decoding RFC 3399 into `time.Time`.
+* Supports decoding time.Duration.
+* Supports `encoding.TextUnmarshaler` types.
 * Decodes a line into a single variable, a slice, or a struct.
 * Decodes all lines into a slice of the above.
 
