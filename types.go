@@ -7,6 +7,7 @@
 package strum
 
 import (
+	"encoding"
 	"fmt"
 	"reflect"
 	"strconv"
@@ -32,6 +33,10 @@ func isDecodableValue(v reflect.Value) bool {
 		return true
 	}
 
+	if isTextUnmarshaler(v) {
+		return true
+	}
+
 	switch v.Kind() {
 	case reflect.Bool:
 		return true
@@ -48,11 +53,13 @@ func isDecodableValue(v reflect.Value) bool {
 	}
 }
 
-func decodeToValue(name string, v reflect.Value, s string) error {
-	// XXX here if it can TextUnmarshal, if so, do that.  But maybe do after
-	// special casing for types?  I.e. strum special casing overrides
-	// TextUnmarshal?
+var textUnmarshalerType = reflect.TypeOf((*encoding.TextUnmarshaler)(nil)).Elem()
 
+func isTextUnmarshaler(v reflect.Value) bool {
+	return v.Type().Implements(textUnmarshalerType)
+}
+
+func decodeToValue(name string, v reflect.Value, s string) error {
 	// Custom parsing for certain types
 	switch v.Type() {
 	case durationType:
@@ -68,6 +75,19 @@ func decodeToValue(name string, v reflect.Value, s string) error {
 			return decodingError(name, err)
 		}
 		v.Set(reflect.ValueOf(t))
+		return nil
+	}
+
+	// Handle TextUnmarshaler types
+	if isTextUnmarshaler(v) {
+		maybeInstantiatePtr(v)
+		f := v.MethodByName("UnmarshalText")
+		xs := []byte(s)
+		args := []reflect.Value{reflect.ValueOf(xs)}
+		ret := f.Call(args)
+		if !ret[0].IsNil() {
+			return decodingError(name, ret[0].Interface().(error))
+		}
 		return nil
 	}
 
@@ -101,9 +121,19 @@ func decodeToValue(name string, v reflect.Value, s string) error {
 			return decodingError(name, err)
 		}
 		v.SetFloat(f)
+	case reflect.Ptr:
+		maybeInstantiatePtr(v)
+		return decodeToValue(name, v.Elem(), s)
 	default:
 		return decodingError(name, fmt.Errorf("unsupported type %s", v.Type()))
 	}
 
 	return nil
+}
+
+func maybeInstantiatePtr(v reflect.Value) {
+	if v.Kind() == reflect.Ptr && v.IsNil() {
+		np := reflect.New(v.Type().Elem())
+		v.Set(np)
+	}
 }

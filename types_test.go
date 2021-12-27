@@ -10,12 +10,40 @@ import (
 	"bytes"
 	"fmt"
 	"math"
+	"math/big"
 	"math/bits"
 	"testing"
 	"time"
 
 	"github.com/xdg-go/strum"
 )
+
+type testcase struct {
+	label       string
+	input       string
+	want        func() interface{}
+	decode      func(*testing.T, *strum.Decoder) (interface{}, error)
+	errContains string
+}
+
+func testTestCases(t *testing.T, cases []testcase) {
+	t.Helper()
+	for _, c := range cases {
+		t.Run(c.label, func(t *testing.T) {
+			r := bytes.NewBufferString(c.input)
+			d := strum.NewDecoder(r)
+			v, err := c.decode(t, d)
+			if len(c.errContains) != 0 {
+				errContains(t, err, c.errContains, "decoding")
+				return
+			}
+			if err != nil {
+				t.Fatalf("decoding: %v", err)
+			}
+			isWantGot(t, c.want(), v, "decode result")
+		})
+	}
+}
 
 func TestDecodeBool(t *testing.T) {
 	cases := []struct {
@@ -453,6 +481,41 @@ func TestDecodeStruct(t *testing.T) {
 	}
 }
 
+func TestDecodeTextUnmarshaler(t *testing.T) {
+	cases := []struct {
+		label       string
+		input       string
+		want        *big.Rat
+		errContains string
+	}{
+		{
+			label: "big.Rat",
+			input: "1/3",
+			want:  big.NewRat(1, 3),
+		},
+		{
+			label:       "a/b",
+			input:       "a/b",
+			errContains: "cannot unmarshal",
+		},
+	}
+
+	for _, c := range cases {
+		c := c
+		t.Run(c.label, func(t *testing.T) {
+			r := bytes.NewBufferString(c.input)
+			d := strum.NewDecoder(r)
+			var got *big.Rat
+			err := d.Decode(&got)
+			errContains(t, err, c.errContains, "decode error")
+			if err == nil {
+				// To compare big.Rat, stringify
+				isWantGot(t, c.want.String(), got.String(), "decode result")
+			}
+		})
+	}
+}
+
 func TestUnsupportedType(t *testing.T) {
 	r := bytes.NewBufferString("123")
 	d := strum.NewDecoder(r)
@@ -464,4 +527,65 @@ func TestUnsupportedType(t *testing.T) {
 	var u unsupported
 	err := d.Decode(&u)
 	errContains(t, err, "unsupported type complex128", "unsupported")
+}
+
+func TestPointers(t *testing.T) {
+	type sxWithBoolHandle struct {
+		B **bool
+	}
+	cases := []testcase{
+		{
+			label: "bool",
+			input: "true",
+			want:  func() interface{} { return true },
+			decode: func(t *testing.T, d *strum.Decoder) (interface{}, error) {
+				var b bool
+				err := d.Decode(&b)
+				return b, err
+			},
+		},
+		{
+			label: "*bool",
+			input: "true",
+			want:  func() interface{} { b := true; return &b },
+			decode: func(t *testing.T, d *strum.Decoder) (interface{}, error) {
+				var b bool
+				pb := &b
+				err := d.Decode(&pb)
+				return pb, err
+			},
+		},
+		{
+			label: "*bool uninitialized",
+			input: "true",
+			want:  func() interface{} { b := true; return &b },
+			decode: func(t *testing.T, d *strum.Decoder) (interface{}, error) {
+				var pb *bool
+				err := d.Decode(&pb)
+				return pb, err
+			},
+		},
+		{
+			label: "**bool uninitialized",
+			input: "true",
+			want:  func() interface{} { b := true; pb := &b; return &pb },
+			decode: func(t *testing.T, d *strum.Decoder) (interface{}, error) {
+				var pb **bool
+				err := d.Decode(&pb)
+				return pb, err
+			},
+		},
+		{
+			label: "*struct with **bool uninitialized",
+			input: "true",
+			want:  func() interface{} { b := true; pb := &b; return &sxWithBoolHandle{B: &pb} },
+			decode: func(t *testing.T, d *strum.Decoder) (interface{}, error) {
+				var x *sxWithBoolHandle
+				err := d.Decode(&x)
+				return x, err
+			},
+		},
+	}
+
+	testTestCases(t, cases)
 }

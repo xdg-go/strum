@@ -152,30 +152,43 @@ func (d *Decoder) Decode(v interface{}) error {
 	return d.decode(argValue.Elem())
 }
 
+// decode puts a single line of input into a destination. It invokes a type-aware,
+// decoding routine that determines whether the line must have a single token,
+// or be consumed as a line, or whether multiple tokens are decoded to a slice
+// or struct.  It also recursively dereferences pointers to find an element to
+// decode in case they are pointers to structs, slices, or text unmarshalers.
 func (d *Decoder) decode(destValue reflect.Value) error {
 	// Handle certain types specially, not as their underlying data kind.
 	switch destValue.Type() {
 	case durationType:
-		return d.decodeSingleToken("time.Duration", destValue)
+		return d.decodeSingleToken(destValue)
 	case timeType:
-		return d.decodeSingleToken("time.Time", destValue)
+		return d.decodeSingleToken(destValue)
+	}
+
+	// Handle text unmarshaler types
+	if isTextUnmarshaler(destValue) {
+		return d.decodeSingleToken(destValue)
 	}
 
 	switch destValue.Kind() {
 	case reflect.Bool:
-		return d.decodeSingleToken("bool", destValue)
+		return d.decodeSingleToken(destValue)
 	case reflect.String:
-		return d.decodeLine("string", destValue)
+		return d.decodeLine(destValue)
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		return d.decodeSingleToken("int", destValue)
+		return d.decodeSingleToken(destValue)
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		return d.decodeSingleToken("uint", destValue)
+		return d.decodeSingleToken(destValue)
 	case reflect.Float32, reflect.Float64:
-		return d.decodeSingleToken("float", destValue)
+		return d.decodeSingleToken(destValue)
 	case reflect.Struct:
 		return d.decodeStruct(destValue)
 	case reflect.Slice:
 		return d.decodeSlice(destValue)
+	case reflect.Ptr:
+		maybeInstantiatePtr(destValue)
+		return d.decode(destValue.Elem())
 	default:
 		return fmt.Errorf("cannot decode into type %s", destValue.Type())
 	}
