@@ -10,6 +10,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"math/big"
 	"regexp"
 	"strings"
 	"testing"
@@ -364,72 +365,119 @@ func TestDecodeStringContainers(t *testing.T) {
 	isWantGot(t, xs[1:], output, "Decode to string slice")
 }
 
-func TestDecodeSliceOfBool(t *testing.T) {
-	cases := []struct {
-		label       string
-		input       string
-		want        []bool
-		errContains string
-	}{
+func TestDecodeSlices(t *testing.T) {
+	cases := []testcase{
 		{
-			label: "false true",
+			label: "bool: false true",
 			input: "false true",
-			want:  []bool{false, true},
+			want:  func() interface{} { return []bool{false, true} },
+			decode: func(t *testing.T, d *strum.Decoder) (interface{}, error) {
+				var got []bool
+				err := d.Decode(&got)
+				return got, err
+			},
 		},
 		{
-			label:       "false junk",
-			input:       "false junk",
+			label: "bool",
+			input: "false junk",
+			decode: func(t *testing.T, d *strum.Decoder) (interface{}, error) {
+				var got []bool
+				err := d.Decode(&got)
+				return got, err
+			},
 			errContains: "error decoding",
 		},
-	}
-
-	for _, c := range cases {
-		c := c
-		t.Run(c.label, func(t *testing.T) {
-			r := bytes.NewBufferString(c.input)
-			d := strum.NewDecoder(r)
-			var got []bool
-			err := d.Decode(&got)
-			errContains(t, err, c.errContains, "decode error")
-			if err == nil {
-				isWantGot(t, c.want, got, "decode result")
-			}
-		})
-	}
-}
-
-func TestDecodeSliceOfString(t *testing.T) {
-	cases := []struct {
-		label       string
-		input       string
-		want        []string
-		errContains string
-	}{
 		{
-			label: "false true",
-			input: "false true",
-			want:  []string{"false", "true"},
+			label: "string",
+			input: "hello world",
+			want:  func() interface{} { return []string{"hello", "world"} },
+			decode: func(t *testing.T, d *strum.Decoder) (interface{}, error) {
+				var got []string
+				err := d.Decode(&got)
+				return got, err
+			},
 		},
 		{
-			label: "false junk",
-			input: "false junk",
-			want:  []string{"false", "junk"},
+			label: "int",
+			input: "23 45",
+			want:  func() interface{} { return []int{23, 45} },
+			decode: func(t *testing.T, d *strum.Decoder) (interface{}, error) {
+				var got []int
+				err := d.Decode(&got)
+				return got, err
+			},
+		},
+		{
+			label: "uint",
+			input: "23 45",
+			want:  func() interface{} { return []uint{23, 45} },
+			decode: func(t *testing.T, d *strum.Decoder) (interface{}, error) {
+				var got []uint
+				err := d.Decode(&got)
+				return got, err
+			},
+		},
+		{
+			label: "float64",
+			input: "3.14 1.41",
+			want:  func() interface{} { return []float64{3.14, 1.41} },
+			decode: func(t *testing.T, d *strum.Decoder) (interface{}, error) {
+				var got []float64
+				err := d.Decode(&got)
+				return got, err
+			},
+		},
+		{
+			label: "time.Time",
+			input: "2021 2022",
+			want: func() interface{} {
+				return []time.Time{
+					time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC),
+					time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC),
+				}
+			},
+			decode: func(t *testing.T, d *strum.Decoder) (interface{}, error) {
+				var got []time.Time
+				err := d.Decode(&got)
+				return got, err
+			},
+		},
+		{
+			label: "time.Duration",
+			input: "10s 10m",
+			want: func() interface{} {
+				return []time.Duration{
+					time.Duration(10 * time.Second),
+					time.Duration(10 * time.Minute),
+				}
+			},
+			decode: func(t *testing.T, d *strum.Decoder) (interface{}, error) {
+				var got []time.Duration
+				err := d.Decode(&got)
+				return got, err
+			},
+		},
+		{
+			label: "big.Rat",
+			input: "1/2 1/3 1/4",
+			want: func() interface{} {
+				return []*big.Rat{
+					big.NewRat(1, 2),
+					big.NewRat(1, 3),
+					big.NewRat(1, 4),
+				}
+			},
+			decode: func(t *testing.T, d *strum.Decoder) (interface{}, error) {
+				var got []*big.Rat
+				err := d.Decode(&got)
+				// Must stringify results for comparison
+				return got, err
+			},
+			normalize: func(v interface{}) interface{} { return fmt.Sprintf("%v", v) },
 		},
 	}
 
-	for _, c := range cases {
-		c := c
-		t.Run(c.label, func(t *testing.T) {
-			r := bytes.NewBufferString(c.input)
-			d := strum.NewDecoder(r)
-			var got []string
-			err := d.Decode(&got)
-			errContains(t, err, c.errContains, "decode error")
-			if err == nil {
-				isWantGot(t, c.want, got, "decode result")
-			}
-		})
-	}
+	testTestCases(t, cases)
 }
 
 func TestDecodeAll(t *testing.T) {

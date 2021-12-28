@@ -24,6 +24,7 @@ type testcase struct {
 	want        func() interface{}
 	decode      func(*testing.T, *strum.Decoder) (interface{}, error)
 	errContains string
+	normalize   func(v interface{}) interface{}
 }
 
 func testTestCases(t *testing.T, cases []testcase) {
@@ -32,7 +33,7 @@ func testTestCases(t *testing.T, cases []testcase) {
 		t.Run(c.label, func(t *testing.T) {
 			r := bytes.NewBufferString(c.input)
 			d := strum.NewDecoder(r)
-			v, err := c.decode(t, d)
+			got, err := c.decode(t, d)
 			if len(c.errContains) != 0 {
 				errContains(t, err, c.errContains, "decoding")
 				return
@@ -40,7 +41,12 @@ func testTestCases(t *testing.T, cases []testcase) {
 			if err != nil {
 				t.Fatalf("decoding: %v", err)
 			}
-			isWantGot(t, c.want(), v, "decode result")
+			want := c.want()
+			if c.normalize != nil {
+				want = c.normalize(want)
+				got = c.normalize(got)
+			}
+			isWantGot(t, want, got, "decode result")
 		})
 	}
 }
