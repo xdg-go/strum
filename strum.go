@@ -191,7 +191,10 @@ func (d *Decoder) decodeStruct(destValue reflect.Value) error {
 	destType := destValue.Type()
 	destNS := destType.PkgPath() + "." + destType.Name()
 
-	// map tokens into argValue
+	// Zero the struct so any prior fields are reset.
+	destValue.Set(reflect.New(destType).Elem())
+
+	// Map tokens into argValue
 	numFields := destValue.NumField()
 	for i := range tokens {
 		if i >= numFields {

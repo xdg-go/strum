@@ -15,7 +15,6 @@ import (
 	"time"
 )
 
-// XXX this needs to be fixed not to be field-specific
 func decodingError(name string, err error) error {
 	return fmt.Errorf("error decoding to %s: %w", name, err)
 }

@@ -443,42 +443,50 @@ func TestDecodeStruct(t *testing.T) {
 		Active bool
 	}
 
-	cases := []struct {
-		label       string
-		input       string
-		want        person
-		errContains string
-	}{
+	cases := []testcase{
 		{
 			label: "tokens == fields",
 			input: "John 42 2021-01-01T00:00:00Z true",
-			want:  person{"John", 42, time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC), true},
+			want:  func() interface{} { return person{"John", 42, time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC), true} },
+			decode: func(t *testing.T, d *strum.Decoder) (interface{}, error) {
+				var p person
+				err := d.Decode(&p)
+				return p, err
+			},
 		},
 		{
 			label: "tokens < fields",
 			input: "John 42 2021-01-01T00:00:00Z",
-			want:  person{"John", 42, time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC), false},
+			want:  func() interface{} { return person{"John", 42, time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC), false} },
+			decode: func(t *testing.T, d *strum.Decoder) (interface{}, error) {
+				var p person
+				err := d.Decode(&p)
+				return p, err
+			},
 		},
 		{
-			label:       "tokens > fields",
-			input:       "John 42 2021-01-01T00:00:00Z true 87",
+			label: "tokens > fields",
+			input: "John 42 2021-01-01T00:00:00Z true 87",
+			decode: func(t *testing.T, d *strum.Decoder) (interface{}, error) {
+				var p person
+				err := d.Decode(&p)
+				return p, err
+			},
 			errContains: "too many tokens for struct strum_test.person",
+		},
+		{
+			label: "zero valued",
+			input: "John 42 2021-01-01T00:00:00Z",
+			want:  func() interface{} { return person{"John", 42, time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC), false} },
+			decode: func(t *testing.T, d *strum.Decoder) (interface{}, error) {
+				p := person{"Jane", 23, time.Date(2021, 2, 1, 0, 0, 0, 0, time.UTC), true}
+				err := d.Decode(&p)
+				return p, err
+			},
 		},
 	}
 
-	for _, c := range cases {
-		c := c
-		t.Run(c.label, func(t *testing.T) {
-			r := bytes.NewBufferString(c.input)
-			d := strum.NewDecoder(r)
-			var got person
-			err := d.Decode(&got)
-			errContains(t, err, c.errContains, "decode error")
-			if err == nil {
-				isWantGot(t, c.want, got, "decode result")
-			}
-		})
-	}
+	testTestCases(t, cases)
 }
 
 func TestDecodeTextUnmarshaler(t *testing.T) {
