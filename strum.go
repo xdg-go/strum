@@ -32,12 +32,17 @@
 // Additionally, there is special support for certain types:
 //
 //  - time.Duration
-//  - time.Time (only RFC 3339 strings supported at the moment)
+//  - time.Time
 //  - any type implementing encoding.TextUnmarshaler
 //  - pointers to supported types (which will auto-instantiate)
 //
 // For numeric types, all Go literal formats are supported, including base
 // prefixes (`0xff`) and underscores (`1_000_000`) for integers.
+//
+// For time.Time, strum uses the github.com/araddon/dateparse library or allows
+// specifying a custom date parser. By default, dateparse favors United States
+// interpretation of MM/DD/YYYY and has time zone semantics equivalent to
+// `time.Parse`.
 //
 // strum provides `DecodeAll` to unmarshal all lines of input at once.
 package strum
@@ -51,27 +56,42 @@ import (
 	"reflect"
 	"regexp"
 	"strings"
+	"time"
+
+	"github.com/araddon/dateparse"
 )
 
 // A Tokenizer is a function that breaks an input string into tokens.
 type Tokenizer func(s string) ([]string, error)
 
+// A DateParser parses a string into a time.Time struct.
+type DateParser func(s string) (time.Time, error)
+
 // A Decoder converts an input stream into Go types.
 type Decoder struct {
-	s *bufio.Scanner
-	t Tokenizer
+	s  *bufio.Scanner
+	t  Tokenizer
+	dp DateParser
 }
 
 // NewDecoder returns a Decoder that reads from r. The default Decoder will
-// tokenize with `strings.Fields` function.
+// tokenize with `strings.Fields` function. The default date parser uses
+// github.com/araddon/dateparse.ParseAny.
 func NewDecoder(r io.Reader) *Decoder {
 	return &Decoder{
-		s: bufio.NewScanner(r),
-		t: func(s string) ([]string, error) { return strings.Fields(s), nil },
+		s:  bufio.NewScanner(r),
+		t:  func(s string) ([]string, error) { return strings.Fields(s), nil },
+		dp: func(s string) (time.Time, error) { return dateparse.ParseAny(s) },
 	}
 }
 
-// WithTokenizer modifies a Decoder to use a customer tokenizing function.
+// WithDateParser modifies a Decoder to use a custom date parsing function.
+func (d *Decoder) WithDateParser(dp DateParser) *Decoder {
+	d.dp = dp
+	return d
+}
+
+// WithTokenizer modifies a Decoder to use a custom tokenizing function.
 func (d *Decoder) WithTokenizer(t Tokenizer) *Decoder {
 	d.t = t
 	return d
@@ -201,7 +221,7 @@ func (d *Decoder) decodeStruct(destValue reflect.Value) error {
 			return fmt.Errorf("too many tokens for struct %s", destValue.Type())
 		}
 		fieldName := destNS + "." + destType.Field(i).Name
-		err = decodeToValue(fieldName, destValue.Field(i), tokens[i])
+		err = d.decodeToValue(fieldName, destValue.Field(i), tokens[i])
 		if err != nil {
 			return err
 		}
@@ -224,7 +244,7 @@ func (d *Decoder) decodeSlice(sliceValue reflect.Value) error {
 
 	for i, s := range tokens {
 		v := reflect.New(sliceType.Elem()).Elem()
-		err := decodeToValue(fmt.Sprintf("element %d", i), v, s)
+		err := d.decodeToValue(fmt.Sprintf("element %d", i), v, s)
 		if err != nil {
 			return err
 		}
@@ -244,7 +264,7 @@ func (d *Decoder) decodeSingleToken(destValue reflect.Value) error {
 		return fmt.Errorf("decoding %s: expected 1 token, but found %d", destValue.Type(), len(tokens))
 	}
 
-	return decodeToValue(destValue.Type().String(), destValue, tokens[0])
+	return d.decodeToValue(destValue.Type().String(), destValue, tokens[0])
 }
 
 func (d *Decoder) decodeLine(destValue reflect.Value) error {
@@ -253,7 +273,7 @@ func (d *Decoder) decodeLine(destValue reflect.Value) error {
 		return err
 	}
 
-	return decodeToValue(destValue.Type().String(), destValue, line)
+	return d.decodeToValue(destValue.Type().String(), destValue, line)
 }
 
 // DecodeAll reads the remaining lines of input into `v`, where `v` must be a

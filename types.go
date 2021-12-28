@@ -58,7 +58,7 @@ func isTextUnmarshaler(v reflect.Value) bool {
 	return v.Type().Implements(textUnmarshalerType)
 }
 
-func decodeToValue(name string, v reflect.Value, s string) error {
+func (d *Decoder) decodeToValue(name string, v reflect.Value, s string) error {
 	// Custom parsing for certain types
 	switch v.Type() {
 	case durationType:
@@ -69,7 +69,7 @@ func decodeToValue(name string, v reflect.Value, s string) error {
 		v.Set(reflect.ValueOf(t))
 		return nil
 	case timeType:
-		t, err := time.Parse(time.RFC3339, s)
+		t, err := d.dp(s)
 		if err != nil {
 			return decodingError(name, err)
 		}
@@ -122,7 +122,7 @@ func decodeToValue(name string, v reflect.Value, s string) error {
 		v.SetFloat(f)
 	case reflect.Ptr:
 		maybeInstantiatePtr(v)
-		return decodeToValue(name, v.Elem(), s)
+		return d.decodeToValue(name, v.Elem(), s)
 	default:
 		return decodingError(name, fmt.Errorf("unsupported type %s", v.Type()))
 	}

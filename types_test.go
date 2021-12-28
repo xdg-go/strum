@@ -363,37 +363,34 @@ func TestDecodeFloats(t *testing.T) {
 }
 
 func TestDecodeDate(t *testing.T) {
-	cases := []struct {
-		label       string
-		input       string
-		want        time.Time
-		errContains string
-	}{
+	timeDecode := func(t *testing.T, d *strum.Decoder) (interface{}, error) {
+		var got time.Time
+		err := d.Decode(&got)
+		return got, err
+	}
+
+	cases := []testcase{
 		{
-			label: "RFC3339",
-			input: "2021-01-01T00:00:00Z",
-			want:  time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC),
+			label:  "RFC3339",
+			input:  "2021-01-01T00:00:00Z",
+			want:   func() interface{} { return time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC) },
+			decode: timeDecode,
+		},
+		{
+			label:  "only year",
+			input:  "2021",
+			want:   func() interface{} { return time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC) },
+			decode: timeDecode,
 		},
 		{
 			label:       "invalid string",
 			input:       "not-a-date-string",
-			errContains: "cannot parse",
+			decode:      timeDecode,
+			errContains: "error decoding to time.Time",
 		},
 	}
 
-	for _, c := range cases {
-		c := c
-		t.Run(c.label, func(t *testing.T) {
-			r := bytes.NewBufferString(c.input)
-			d := strum.NewDecoder(r)
-			var got time.Time
-			err := d.Decode(&got)
-			errContains(t, err, c.errContains, "decode error")
-			if err == nil {
-				isWantGot(t, c.want, got, "decode result")
-			}
-		})
-	}
+	testTestCases(t, cases)
 }
 
 func TestDecodeDuration(t *testing.T) {

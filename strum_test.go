@@ -116,6 +116,21 @@ func TestRegexpNoMatch(t *testing.T) {
 	errContains(t, err, "regexp failed to match line", "regexp didn't match")
 }
 
+func TestDateParser(t *testing.T) {
+	text := "not-a-date"
+	r := bytes.NewBufferString(text)
+	want := time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC)
+	d := strum.NewDecoder(r).WithDateParser(func(s string) (time.Time, error) {
+		return want, nil
+	})
+	var got time.Time
+	err := d.Decode(&got)
+	if err != nil {
+		t.Fatal(err)
+	}
+	isWantGot(t, want, got, "custom date parser")
+}
+
 func TestDecode(t *testing.T) {
 	type person struct {
 		Name   string
