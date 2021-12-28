@@ -530,6 +530,13 @@ func TestBadTargets(t *testing.T) {
 		err := d.Decode(&sp)
 		errContains(t, err, "decoding to this slice type not supported: []strum_test.person", "slice of struct")
 	}
+
+	// unmarshal
+	{
+		var i int
+		err := strum.Unmarshal([]byte("hello"), &i)
+		errContains(t, err, "argument must be a pointer to slice", "Unmarshal")
+	}
 }
 
 func TestUnmarshal(t *testing.T) {
