@@ -52,86 +52,71 @@ func testTestCases(t *testing.T, cases []testcase) {
 }
 
 func TestDecodeBool(t *testing.T) {
-	cases := []struct {
-		label       string
-		input       string
-		want        bool
-		errContains string
-	}{
+	boolDecode := func(t *testing.T, d *strum.Decoder) (interface{}, error) {
+		var got bool
+		err := d.Decode(&got)
+		return got, err
+	}
+
+	cases := []testcase{
 		{
-			label: "false",
-			input: "false",
-			want:  false,
+			label:  "false",
+			input:  "false",
+			want:   func() interface{} { return false },
+			decode: boolDecode,
 		},
 		{
-			label: "true",
-			input: "true",
-			want:  true,
+			label:  "true",
+			input:  "true",
+			want:   func() interface{} { return true },
+			decode: boolDecode,
 		},
 		{
-			label: "mixed case true",
-			input: "trUe",
-			want:  true,
+			label:  "mixed case true",
+			input:  "trUe",
+			want:   func() interface{} { return true },
+			decode: boolDecode,
 		},
 		{
-			label: "upper case false",
-			input: "FALSE",
-			want:  false,
+			label:  "upper case false",
+			input:  "FALSE",
+			want:   func() interface{} { return false },
+			decode: boolDecode,
 		},
 		{
 			label:       "invalid string",
 			input:       "yes",
+			decode:      boolDecode,
 			errContains: "error decoding",
 		},
 	}
 
-	for _, c := range cases {
-		c := c
-		t.Run(c.label, func(t *testing.T) {
-			r := bytes.NewBufferString(c.input)
-			d := strum.NewDecoder(r)
-			var got bool
-			err := d.Decode(&got)
-			errContains(t, err, c.errContains, "decode error")
-			if err == nil {
-				isWantGot(t, c.want, got, "decode result")
-			}
-		})
-	}
+	testTestCases(t, cases)
 }
 
 func TestDecodeString(t *testing.T) {
-	cases := []struct {
-		label       string
-		input       string
-		want        string
-		errContains string
-	}{
+	stringDecode := func(t *testing.T, d *strum.Decoder) (interface{}, error) {
+		var got string
+		err := d.Decode(&got)
+		return got, err
+	}
+
+	cases := []testcase{
 		{
-			label: "a",
-			input: "a",
-			want:  "a",
+			label:  "a",
+			input:  "a",
+			want:   func() interface{} { return "a" },
+			decode: stringDecode,
 		},
 		{
-			label: "a b",
-			input: "a b",
-			want:  "a b",
+			label:  "a b",
+			input:  "a b",
+			want:   func() interface{} { return "a b" },
+			decode: stringDecode,
 		},
 	}
 
-	for _, c := range cases {
-		c := c
-		t.Run(c.label, func(t *testing.T) {
-			r := bytes.NewBufferString(c.input)
-			d := strum.NewDecoder(r)
-			var got string
-			err := d.Decode(&got)
-			errContains(t, err, c.errContains, "decode error")
-			if err == nil {
-				isWantGot(t, c.want, got, "decode result")
-			}
-		})
-	}
+	testTestCases(t, cases)
 }
 
 func TestDecodeInts(t *testing.T) {
@@ -149,80 +134,75 @@ func TestDecodeInts(t *testing.T) {
 	maxIntStr := fmt.Sprintf("%d", maxInt)
 	minIntStr := fmt.Sprintf("%d", minInt)
 
-	cases := []struct {
-		label       string
-		input       string
-		want        ints
-		errContains string
-	}{
+	intDecode := func(t *testing.T, d *strum.Decoder) (interface{}, error) {
+		var got ints
+		err := d.Decode(&got)
+		return got, err
+	}
+	cases := []testcase{
 		{
-			label: "all zeros",
-			input: "0 0 0 0 0",
-			want:  ints{},
+			label:  "all zeros",
+			input:  "0 0 0 0 0",
+			want:   func() interface{} { return ints{} },
+			decode: intDecode,
 		},
 		{
-			label: "positive decimal",
-			input: "1 2 3 4 5",
-			want:  ints{1, 2, 3, 4, 5},
+			label:  "positive decimal",
+			input:  "1 2 3 4 5",
+			want:   func() interface{} { return ints{1, 2, 3, 4, 5} },
+			decode: intDecode,
 		},
 		{
-			label: "negative decimal",
-			input: "-1 -2 -3 -4 -5",
-			want:  ints{-1, -2, -3, -4, -5},
+			label:  "negative decimal",
+			input:  "-1 -2 -3 -4 -5",
+			want:   func() interface{} { return ints{-1, -2, -3, -4, -5} },
+			decode: intDecode,
 		},
 		{
-			label: "positive hex",
-			input: "0xa 0xb 0xc 0xd 0xe",
-			want:  ints{10, 11, 12, 13, 14},
+			label:  "positive hex",
+			input:  "0xa 0xb 0xc 0xd 0xe",
+			want:   func() interface{} { return ints{10, 11, 12, 13, 14} },
+			decode: intDecode,
 		},
 		{
-			label: "negative hex",
-			input: "-0xa -0xb -0xc -0xd -0xe",
-			want:  ints{-10, -11, -12, -13, -14},
+			label:  "negative hex",
+			input:  "-0xa -0xb -0xc -0xd -0xe",
+			want:   func() interface{} { return ints{-10, -11, -12, -13, -14} },
+			decode: intDecode,
 		},
 		{
-			label: "maxints",
-			input: maxIntStr + " 127 32767 2_147_483_647 9_223_372_036_854_775_807",
-			want:  ints{maxInt, math.MaxInt8, math.MaxInt16, math.MaxInt32, math.MaxInt64},
+			label:  "maxints",
+			input:  maxIntStr + " 127 32767 2_147_483_647 9_223_372_036_854_775_807",
+			want:   func() interface{} { return ints{maxInt, math.MaxInt8, math.MaxInt16, math.MaxInt32, math.MaxInt64} },
+			decode: intDecode,
 		},
 		{
-			label: "minints",
-			input: minIntStr + " -128 -32768 -2_147_483_648 -9_223_372_036_854_775_808",
-			want:  ints{minInt, math.MinInt8, math.MinInt16, math.MinInt32, math.MinInt64},
+			label:  "minints",
+			input:  minIntStr + " -128 -32768 -2_147_483_648 -9_223_372_036_854_775_808",
+			want:   func() interface{} { return ints{minInt, math.MinInt8, math.MinInt16, math.MinInt32, math.MinInt64} },
+			decode: intDecode,
 		},
 		{
 			label:       "overflow maxint8",
 			input:       "1 128 3 4 5",
-			want:        ints{},
+			decode:      intDecode,
 			errContains: "out of range",
 		},
 		{
 			label:       "overflow minint8",
 			input:       "1 -129 3 4 5",
-			want:        ints{},
+			decode:      intDecode,
 			errContains: "out of range",
 		},
 		{
 			label:       "overflow maxint64",
 			input:       "1 127 32767 2_147_483_647 9_223_372_036_854_775_808",
-			want:        ints{},
+			decode:      intDecode,
 			errContains: "out of range",
 		},
 	}
 
-	for _, c := range cases {
-		c := c
-		t.Run(c.label, func(t *testing.T) {
-			r := bytes.NewBufferString(c.input)
-			d := strum.NewDecoder(r)
-			var got ints
-			err := d.Decode(&got)
-			errContains(t, err, c.errContains, "decode error")
-			if err == nil {
-				isWantGot(t, c.want, got, "decode result")
-			}
-		})
-	}
+	testTestCases(t, cases)
 }
 
 func TestDecodeUints(t *testing.T) {
@@ -237,64 +217,59 @@ func TestDecodeUints(t *testing.T) {
 	maxUint := ^uint(0)
 	maxUintStr := fmt.Sprintf("%d", maxUint)
 
-	cases := []struct {
-		label       string
-		input       string
-		want        uints
-		errContains string
-	}{
+	uintDecode := func(t *testing.T, d *strum.Decoder) (interface{}, error) {
+		var got uints
+		err := d.Decode(&got)
+		return got, err
+	}
+	cases := []testcase{
 		{
-			label: "all zeros",
-			input: "0 0 0 0 0",
-			want:  uints{},
+			label:  "all zeros",
+			input:  "0 0 0 0 0",
+			want:   func() interface{} { return uints{} },
+			decode: uintDecode,
 		},
 		{
-			label: "positive decimal",
-			input: "1 2 3 4 5",
-			want:  uints{1, 2, 3, 4, 5},
+			label:  "positive decimal",
+			input:  "1 2 3 4 5",
+			want:   func() interface{} { return uints{1, 2, 3, 4, 5} },
+			decode: uintDecode,
 		},
 		{
 			label:       "negative decimal",
 			input:       "-1 -2 -3 -4 -5",
+			decode:      uintDecode,
 			errContains: "invalid syntax",
 		},
 		{
-			label: "positive hex",
-			input: "0xa 0xb 0xc 0xd 0xe",
-			want:  uints{10, 11, 12, 13, 14},
+			label:  "positive hex",
+			input:  "0xa 0xb 0xc 0xd 0xe",
+			decode: uintDecode,
+			want:   func() interface{} { return uints{10, 11, 12, 13, 14} },
 		},
 		{
 			label: "maxuints",
 			input: maxUintStr + " 255 65535 4_294_967_295 18_446_744_073_709_551_615",
-			want:  uints{maxUint, math.MaxUint8, math.MaxUint16, math.MaxUint32, math.MaxUint64},
+			want: func() interface{} {
+				return uints{maxUint, math.MaxUint8, math.MaxUint16, math.MaxUint32, math.MaxUint64}
+			},
+			decode: uintDecode,
 		},
 		{
 			label:       "overflow maxuint8",
 			input:       "1 256 3 4 5",
-			want:        uints{},
+			decode:      uintDecode,
 			errContains: "out of range",
 		},
 		{
 			label:       "overflow maxuint64",
 			input:       "1 127 32767 2_147_483_647 18_446_744_073_709_551_616",
-			want:        uints{},
+			decode:      uintDecode,
 			errContains: "out of range",
 		},
 	}
 
-	for _, c := range cases {
-		c := c
-		t.Run(c.label, func(t *testing.T) {
-			r := bytes.NewBufferString(c.input)
-			d := strum.NewDecoder(r)
-			var got uints
-			err := d.Decode(&got)
-			errContains(t, err, c.errContains, "decode error")
-			if err == nil {
-				isWantGot(t, c.want, got, "decode result")
-			}
-		})
-	}
+	testTestCases(t, cases)
 }
 
 func TestDecodeFloats(t *testing.T) {
@@ -303,69 +278,63 @@ func TestDecodeFloats(t *testing.T) {
 		F64 float64
 	}
 
-	cases := []struct {
-		label       string
-		input       string
-		want        floats
-		errContains string
-	}{
+	floatDecode := func(t *testing.T, d *strum.Decoder) (interface{}, error) {
+		var got floats
+		err := d.Decode(&got)
+		return got, err
+	}
+	cases := []testcase{
 		{
-			label: "all zeros",
-			input: "0 0",
-			want:  floats{},
+			label:  "all zeros",
+			input:  "0 0",
+			want:   func() interface{} { return floats{} },
+			decode: floatDecode,
 		},
 		{
-			label: "positive decimal",
-			input: "1.2 2.3",
-			want:  floats{1.2, 2.3},
+			label:  "positive decimal",
+			input:  "1.2 2.3",
+			want:   func() interface{} { return floats{1.2, 2.3} },
+			decode: floatDecode,
 		},
 		{
-			label: "negative decimal",
-			input: "-1.2 -2.3",
-			want:  floats{-1.2, -2.3},
+			label:  "negative decimal",
+			input:  "-1.2 -2.3",
+			want:   func() interface{} { return floats{-1.2, -2.3} },
+			decode: floatDecode,
 		},
 		{
-			label: "specials",
-			input: "-Inf Inf",
-			want:  floats{float32(math.Inf(-1)), math.Inf(1)},
+			label:  "specials",
+			input:  "-Inf Inf",
+			want:   func() interface{} { return floats{float32(math.Inf(-1)), math.Inf(1)} },
+			decode: floatDecode,
 		},
 		{
-			label: "maxfloats",
-			input: "3.40282346638528859811704183484516925440e+38 1.79769313486231570814527423731704356798070e+308",
-			want:  floats{math.MaxFloat32, math.MaxFloat64},
+			label:  "maxfloats",
+			input:  "3.40282346638528859811704183484516925440e+38 1.79769313486231570814527423731704356798070e+308",
+			want:   func() interface{} { return floats{math.MaxFloat32, math.MaxFloat64} },
+			decode: floatDecode,
 		},
 		{
-			label: "small non-zero floats",
-			input: "1.401298464324817070923729583289916131280e-45 4.9406564584124654417656879286822137236505980e-324",
-			want:  floats{math.SmallestNonzeroFloat32, math.SmallestNonzeroFloat64},
+			label:  "small non-zero floats",
+			input:  "1.401298464324817070923729583289916131280e-45 4.9406564584124654417656879286822137236505980e-324",
+			want:   func() interface{} { return floats{math.SmallestNonzeroFloat32, math.SmallestNonzeroFloat64} },
+			decode: floatDecode,
 		},
 		{
 			label:       "out of range float32",
 			input:       "1.0 3.41e310",
-			want:        floats{},
+			decode:      floatDecode,
 			errContains: "value out of range",
 		},
 		{
 			label:       "invalid syntax float32",
 			input:       "1.0 3.41+e38",
-			want:        floats{},
+			decode:      floatDecode,
 			errContains: "invalid syntax",
 		},
 	}
 
-	for _, c := range cases {
-		c := c
-		t.Run(c.label, func(t *testing.T) {
-			r := bytes.NewBufferString(c.input)
-			d := strum.NewDecoder(r)
-			var got floats
-			err := d.Decode(&got)
-			errContains(t, err, c.errContains, "decode error")
-			if err == nil {
-				isWantGot(t, c.want, got, "decode result")
-			}
-		})
-	}
+	testTestCases(t, cases)
 }
 
 func TestDecodeDate(t *testing.T) {
@@ -405,37 +374,27 @@ func TestDecodeDuration(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	cases := []struct {
-		label       string
-		input       string
-		want        time.Duration
-		errContains string
-	}{
+	durationDecode := func(t *testing.T, d *strum.Decoder) (interface{}, error) {
+		var got time.Duration
+		err := d.Decode(&got)
+		return got, err
+	}
+	cases := []testcase{
 		{
-			label: "5s",
-			input: "5s",
-			want:  s5,
+			label:  "5s",
+			input:  "5s",
+			decode: durationDecode,
+			want:   func() interface{} { return s5 },
 		},
 		{
 			label:       "invalid duration",
 			input:       "not-a-duration-string",
+			decode:      durationDecode,
 			errContains: "invalid duration",
 		},
 	}
 
-	for _, c := range cases {
-		c := c
-		t.Run(c.label, func(t *testing.T) {
-			r := bytes.NewBufferString(c.input)
-			d := strum.NewDecoder(r)
-			var got time.Duration
-			err := d.Decode(&got)
-			errContains(t, err, c.errContains, "decode error")
-			if err == nil {
-				isWantGot(t, c.want, got, "decode result")
-			}
-		})
-	}
+	testTestCases(t, cases)
 }
 
 func TestDecodeStruct(t *testing.T) {
@@ -446,46 +405,35 @@ func TestDecodeStruct(t *testing.T) {
 		Active bool
 	}
 
+	structDecode := func(t *testing.T, d *strum.Decoder) (interface{}, error) {
+		var p person
+		err := d.Decode(&p)
+		return p, err
+	}
 	cases := []testcase{
 		{
-			label: "tokens == fields",
-			input: "John 42 2021-01-01T00:00:00Z true",
-			want:  func() interface{} { return person{"John", 42, time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC), true} },
-			decode: func(t *testing.T, d *strum.Decoder) (interface{}, error) {
-				var p person
-				err := d.Decode(&p)
-				return p, err
-			},
+			label:  "tokens == fields",
+			input:  "John 42 2021-01-01T00:00:00Z true",
+			want:   func() interface{} { return person{"John", 42, time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC), true} },
+			decode: structDecode,
 		},
 		{
-			label: "tokens < fields",
-			input: "John 42 2021-01-01T00:00:00Z",
-			want:  func() interface{} { return person{"John", 42, time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC), false} },
-			decode: func(t *testing.T, d *strum.Decoder) (interface{}, error) {
-				var p person
-				err := d.Decode(&p)
-				return p, err
-			},
+			label:  "tokens < fields",
+			input:  "John 42 2021-01-01T00:00:00Z",
+			want:   func() interface{} { return person{"John", 42, time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC), false} },
+			decode: structDecode,
 		},
 		{
-			label: "tokens > fields",
-			input: "John 42 2021-01-01T00:00:00Z true 87",
-			decode: func(t *testing.T, d *strum.Decoder) (interface{}, error) {
-				var p person
-				err := d.Decode(&p)
-				return p, err
-			},
+			label:       "tokens > fields",
+			input:       "John 42 2021-01-01T00:00:00Z true 87",
+			decode:      structDecode,
 			errContains: "too many tokens for struct strum_test.person",
 		},
 		{
-			label: "zero valued",
-			input: "John 42 2021-01-01T00:00:00Z",
-			want:  func() interface{} { return person{"John", 42, time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC), false} },
-			decode: func(t *testing.T, d *strum.Decoder) (interface{}, error) {
-				p := person{"Jane", 23, time.Date(2021, 2, 1, 0, 0, 0, 0, time.UTC), true}
-				err := d.Decode(&p)
-				return p, err
-			},
+			label:  "zero valued",
+			input:  "John 42 2021-01-01T00:00:00Z",
+			want:   func() interface{} { return person{"John", 42, time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC), false} },
+			decode: structDecode,
 		},
 	}
 
@@ -493,38 +441,28 @@ func TestDecodeStruct(t *testing.T) {
 }
 
 func TestDecodeTextUnmarshaler(t *testing.T) {
-	cases := []struct {
-		label       string
-		input       string
-		want        *big.Rat
-		errContains string
-	}{
+	bigratDecoder := func(t *testing.T, d *strum.Decoder) (interface{}, error) {
+		var got *big.Rat
+		err := d.Decode(&got)
+		return got, err
+	}
+	cases := []testcase{
 		{
-			label: "big.Rat",
-			input: "1/3",
-			want:  big.NewRat(1, 3),
+			label:     "big.Rat",
+			input:     "1/3",
+			want:      func() interface{} { return big.NewRat(1, 3) },
+			decode:    bigratDecoder,
+			normalize: func(v interface{}) interface{} { return fmt.Sprintf("%v", v) },
 		},
 		{
 			label:       "a/b",
 			input:       "a/b",
+			decode:      bigratDecoder,
 			errContains: "cannot unmarshal",
 		},
 	}
 
-	for _, c := range cases {
-		c := c
-		t.Run(c.label, func(t *testing.T) {
-			r := bytes.NewBufferString(c.input)
-			d := strum.NewDecoder(r)
-			var got *big.Rat
-			err := d.Decode(&got)
-			errContains(t, err, c.errContains, "decode error")
-			if err == nil {
-				// To compare big.Rat, stringify
-				isWantGot(t, c.want.String(), got.String(), "decode result")
-			}
-		})
-	}
+	testTestCases(t, cases)
 }
 
 func TestUnsupportedType(t *testing.T) {
