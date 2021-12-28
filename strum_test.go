@@ -474,11 +474,11 @@ func TestBadTargets(t *testing.T) {
 	{
 		var v person
 		err := d.Decode(v)
-		errContains(t, err, "argument to Decode must be a pointer", "Decode with non-pointer")
+		errContains(t, err, "argument must be a pointer", "Decode with non-pointer")
 
 		var output []person
 		err = d.DecodeAll(output)
-		errContains(t, err, "argument to DecodeAll must be a pointer", "DecodeAll with non-pointer")
+		errContains(t, err, "argument must be a pointer", "DecodeAll with non-pointer")
 	}
 
 	// pointer to invalid types
@@ -489,24 +489,24 @@ func TestBadTargets(t *testing.T) {
 
 		var output map[string]string
 		err = d.DecodeAll(&output)
-		errContains(t, err, "argument to DecodeAll must be a pointer to slice, not", "DecodeAll with pointer to slice of unsupported type")
+		errContains(t, err, "argument must be a pointer to slice, not", "DecodeAll with pointer to slice of unsupported type")
 	}
 
 	// nil
 	{
 		err := d.Decode(nil)
-		errContains(t, err, "argument to Decode must be a non-nil pointer", "Decode literal nil")
+		errContains(t, err, "argument must be a non-nil pointer", "Decode literal nil")
 
 		var vp *string
 		err = d.Decode(vp)
-		errContains(t, err, "argument to Decode must be a non-nil pointer", "Decode nil pointer")
+		errContains(t, err, "argument must be a non-nil pointer", "Decode nil pointer")
 
 		err = d.DecodeAll(nil)
-		errContains(t, err, "argument to DecodeAll must be a non-nil pointer", "DecodeAll literal nil")
+		errContains(t, err, "argument must be a non-nil pointer", "DecodeAll literal nil")
 
 		var xs *[]string
 		err = d.DecodeAll(xs)
-		errContains(t, err, "argument to DecodeAll must be a non-nil pointer", "DecodeAll nil pointer")
+		errContains(t, err, "argument must be a non-nil pointer", "DecodeAll nil pointer")
 	}
 
 	// slice of struct
@@ -515,4 +515,18 @@ func TestBadTargets(t *testing.T) {
 		err := d.Decode(&sp)
 		errContains(t, err, "decoding to this slice type not supported: []strum_test.person", "slice of struct")
 	}
+}
+
+func TestUnmarshal(t *testing.T) {
+	input := "hello world\ngoodbye world"
+	want := []string{
+		"hello world",
+		"goodbye world",
+	}
+	var xs []string
+	err := strum.Unmarshal([]byte(input), &xs)
+	if err != nil {
+		t.Fatal(err)
+	}
+	isWantGot(t, want, xs, "unmarshal string")
 }

@@ -44,6 +44,7 @@ package strum
 
 import (
 	"bufio"
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
@@ -132,21 +133,11 @@ func (d *Decoder) readline() (string, error) {
 // Decode reads the next line of input and stores it in the value pointed to by
 // `v`. It returns `io.EOF` when no more data is available.
 func (d *Decoder) Decode(v interface{}) error {
-	if v == nil {
-		return fmt.Errorf("argument to Decode must be a non-nil pointer")
+	destValue, err := extractDestValue(v)
+	if err != nil {
+		return fmt.Errorf("Decode: %w", err)
 	}
-
-	argValue := reflect.ValueOf(v)
-
-	if argValue.Kind() != reflect.Ptr {
-		return fmt.Errorf("argument to Decode must be a pointer, not %s", argValue.Kind())
-	}
-
-	if argValue.IsNil() {
-		return fmt.Errorf("argument to Decode must be a non-nil pointer")
-	}
-
-	return d.decode(argValue.Elem())
+	return d.decode(destValue)
 }
 
 // decode puts a single line of input into a destination. It invokes a type-aware,
@@ -268,25 +259,14 @@ func (d *Decoder) decodeLine(destValue reflect.Value) error {
 // the slice.  If `v` points to an uninitialized slice, the slice will be
 // created. DecodeAll returns `nil` when EOF is reached.
 func (d *Decoder) DecodeAll(v interface{}) error {
-	if v == nil {
-		return fmt.Errorf("argument to DecodeAll must be a non-nil pointer")
+	sliceValue, err := extractDestSlice(v)
+	if err != nil {
+		return fmt.Errorf("DecodeAll: %w", err)
 	}
+	return d.decodeAll(sliceValue)
+}
 
-	argValue := reflect.ValueOf(v)
-
-	if argValue.Kind() != reflect.Ptr {
-		return fmt.Errorf("argument to DecodeAll must be a pointer, not %s", argValue.Kind())
-	}
-
-	if argValue.IsNil() {
-		return fmt.Errorf("argument to DecodeAll must be a non-nil pointer")
-	}
-
-	sliceValue := argValue.Elem()
-	if sliceValue.Kind() != reflect.Slice {
-		return fmt.Errorf("argument to DecodeAll must be a pointer to slice, not %s", sliceValue.Kind())
-	}
-
+func (d *Decoder) decodeAll(sliceValue reflect.Value) error {
 	sliceType := sliceValue.Type()
 
 	// Make a zero-length slice if it starts uninitialized
@@ -306,4 +286,50 @@ func (d *Decoder) DecodeAll(v interface{}) error {
 		}
 		sliceValue.Set(reflect.Append(sliceValue, v))
 	}
+}
+
+// Unmarshal parses the input data as newline delimited strings and stores the
+// result in the value pointed to by `v`, where `v` must be a pointer to a slice
+// of a type that would valid for Decode.  If `v` points to an uninitialized
+// slice, the slice will be created.
+func Unmarshal(data []byte, v interface{}) error {
+	sliceValue, err := extractDestSlice(v)
+	if err != nil {
+		return fmt.Errorf("Unmarshal: %w", err)
+	}
+
+	r := bytes.NewBuffer(data)
+	d := NewDecoder(r)
+	return d.decodeAll(sliceValue)
+}
+
+func extractDestValue(v interface{}) (reflect.Value, error) {
+	if v == nil {
+		return reflect.Value{}, fmt.Errorf("argument must be a non-nil pointer")
+	}
+
+	argValue := reflect.ValueOf(v)
+
+	if argValue.Kind() != reflect.Ptr {
+		return reflect.Value{}, fmt.Errorf("argument must be a pointer, not %s", argValue.Kind())
+	}
+
+	if argValue.IsNil() {
+		return reflect.Value{}, fmt.Errorf("argument must be a non-nil pointer")
+	}
+
+	return argValue.Elem(), nil
+}
+
+func extractDestSlice(v interface{}) (reflect.Value, error) {
+	sliceValue, err := extractDestValue(v)
+	if err != nil {
+		return reflect.Value{}, err
+	}
+
+	if sliceValue.Kind() != reflect.Slice {
+		return reflect.Value{}, fmt.Errorf("argument must be a pointer to slice, not %s", sliceValue.Kind())
+	}
+
+	return sliceValue, nil
 }
