@@ -3,7 +3,7 @@
 [![Go Reference](https://pkg.go.dev/badge/github.com/xdg-go/strum.svg)](https://pkg.go.dev/github.com/xdg-go/strum)
 [![Go Report Card](https://goreportcard.com/badge/github.com/xdg-go/strum)](https://goreportcard.com/report/github.com/xdg-go/strum)
 [![Github Actions](https://github.com/xdg-go/strum/actions/workflows/test.yml/badge.svg)](https://github.com/xdg-go/strum/actions/workflows/test.yml)
-[![codecov](https://codecov.io/gh/xdg-go/strum/branch/master/graph/badge.svg)](https://codecov.io/gh/xdg-go/strum)
+[![codecov](https://codecov.io/gh/xdg-go/strum/branch/main/graph/badge.svg?token=Ujcolfc6Db)](https://codecov.io/gh/xdg-go/strum)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
 The strum package provides line-oriented text decoding into simple Go
@@ -12,7 +12,8 @@ variables, slices, and structs.
 * Splits on whitespace, a delimiter, a regular expression, or a custom
   tokenizer.
 * Supports basic primitive types: strings, booleans, ints, uints, floats.
-* Supports decoding RFC 3399 into `time.Time`.
+* Supports decoding `time.Time` using the
+  [dateparse](https://github.com/araddon/dateparse) library.
 * Supports decoding time.Duration.
 * Supports `encoding.TextUnmarshaler` types.
 * Decodes a line into a single variable, a slice, or a struct.

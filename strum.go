@@ -39,10 +39,10 @@
 // For numeric types, all Go literal formats are supported, including base
 // prefixes (`0xff`) and underscores (`1_000_000`) for integers.
 //
-// For time.Time, strum uses the github.com/araddon/dateparse library or allows
-// specifying a custom date parser. By default, dateparse favors United States
+// For time.Time, strum detects and parses  a wide varity of formats using the
+// github.com/araddon/dateparse library. By default, it favors United States
 // interpretation of MM/DD/YYYY and has time zone semantics equivalent to
-// `time.Parse`.
+// `time.Parse`.  strum allows specifying a custom parser instead.
 //
 // strum provides `DecodeAll` to unmarshal all lines of input at once.
 package strum
