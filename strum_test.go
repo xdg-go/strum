@@ -167,6 +167,8 @@ func TestDecode(t *testing.T) {
 
 			output := []person{}
 
+			// This is long-hand versus using DecodeAll to verify that it
+			// actually works as expected line-by-line.
 			for {
 				var p person
 				err := d.Decode(&p)
