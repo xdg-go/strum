@@ -209,7 +209,6 @@ func (d *Decoder) decodeStruct(destValue reflect.Value) error {
 	}
 
 	destType := destValue.Type()
-	destNS := destType.PkgPath() + "." + destType.Name()
 
 	// Zero the struct so any prior fields are reset.
 	destValue.Set(reflect.New(destType).Elem())
@@ -220,7 +219,12 @@ func (d *Decoder) decodeStruct(destValue reflect.Value) error {
 		if i >= numFields {
 			return fmt.Errorf("too many tokens for struct %s", destValue.Type())
 		}
-		fieldName := destNS + "." + destType.Field(i).Name
+		fieldName := destType.Name() + "." + destType.Field(i).Name
+		// PkgPath is empty for exported fields.  See https://pkg.go.dev/reflect#StructField
+		// In Go 1.17, this is available as `IsExported`.
+		if destType.Field(i).PkgPath != "" {
+			return fmt.Errorf("cannot decode to unexported field %s", fieldName)
+		}
 		err = d.decodeToValue(fieldName, destValue.Field(i), tokens[i])
 		if err != nil {
 			return err

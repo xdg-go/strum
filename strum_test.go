@@ -425,6 +425,11 @@ func TestBadTargets(t *testing.T) {
 		Date   time.Time
 	}
 
+	type partPrivate struct {
+		First  string
+		second string
+	}
+
 	lines := []string{
 		"John 42 true 2021-01-01T00:00:00Z",
 		"Jane 23 false 2022-01-01T00:00:00Z",
@@ -485,6 +490,13 @@ func TestBadTargets(t *testing.T) {
 		var i int
 		err := strum.Unmarshal([]byte("hello"), &i)
 		errContains(t, err, "argument must be a pointer to slice", "Unmarshal")
+	}
+
+	// private fields
+	{
+		var pp []partPrivate
+		err := strum.Unmarshal([]byte("hello world"), &pp)
+		errContains(t, err, "cannot decode to unexported field", "private fields")
 	}
 }
 
