@@ -192,179 +192,78 @@ func TestDecode(t *testing.T) {
 	}
 }
 
-func TestDecodeIntContainers(t *testing.T) {
-	lines := []string{
-		"42",
-		"23",
-		"36",
-		"81",
-	}
-
-	ints := []int{42, 23, 36, 81}
-
-	r := bytes.NewBufferString(strings.Join(lines, "\n"))
-	d := strum.NewDecoder(r)
-
-	var i int
-	var output []int
-
-	err := d.Decode(&i)
-	if err != nil {
-		t.Fatal(err)
-	}
-	isWantGot(t, ints[0], i, "Decode to int reference")
-
-	err = d.DecodeAll(&output)
-	if err != nil {
-		t.Fatal(err)
-	}
-	isWantGot(t, ints[1:], output, "Decode to int slice")
-}
-
-func TestDecodeIntContainersErrors(t *testing.T) {
-	cases := []struct {
-		label       string
-		input       string
-		errContains string
-	}{
+func TestDecodeSingleToken(t *testing.T) {
+	cases := []testcase{
 		{
-			label:       "no tokens",
-			input:       "\n",
+			label: "int",
+			input: "23",
+			want:  func() interface{} { return 23 },
+			decode: func(t *testing.T, d *strum.Decoder) (interface{}, error) {
+				var got int
+				err := d.Decode(&got)
+				return got, err
+			},
+		},
+		{
+			label: "no tokens",
+			input: "\n",
+			decode: func(t *testing.T, d *strum.Decoder) (interface{}, error) {
+				var got int
+				err := d.Decode(&got)
+				return got, err
+			},
 			errContains: "decoding int: expected 1 token, but found 0",
 		},
 		{
-			label:       "two tokens",
-			input:       "42 23",
+			label: "two tokens",
+			input: "42 23",
+			decode: func(t *testing.T, d *strum.Decoder) (interface{}, error) {
+				var got int
+				err := d.Decode(&got)
+				return got, err
+			},
 			errContains: "decoding int: expected 1 token, but found 2",
+		},
+		{
+			label: "uint",
+			input: "45",
+			want:  func() interface{} { return uint(45) },
+			decode: func(t *testing.T, d *strum.Decoder) (interface{}, error) {
+				var got uint
+				err := d.Decode(&got)
+				return got, err
+			},
+		},
+		{
+			label: "float32",
+			input: "4.5",
+			want:  func() interface{} { return float32(4.5) },
+			decode: func(t *testing.T, d *strum.Decoder) (interface{}, error) {
+				var got float32
+				err := d.Decode(&got)
+				return got, err
+			},
 		},
 	}
 
-	for _, c := range cases {
-		c := c
-		t.Run(c.label, func(t *testing.T) {
-			r := bytes.NewBufferString(c.input)
-			d := strum.NewDecoder(r)
-			var i int
-			err := d.Decode(&i)
-			errContains(t, err, c.errContains, "Decode error")
-		})
-	}
+	testTestCases(t, cases)
 }
 
-func TestDecodeUintContainers(t *testing.T) {
-	lines := []string{
-		"42",
-		"23",
-		"36",
-		"81",
+func TestDecodeEntireLine(t *testing.T) {
+	cases := []testcase{
+		{
+			label: "string",
+			input: "hello world",
+			want:  func() interface{} { return "hello world" },
+			decode: func(t *testing.T, d *strum.Decoder) (interface{}, error) {
+				var got string
+				err := d.Decode(&got)
+				return got, err
+			},
+		},
 	}
 
-	uints := []uint8{42, 23, 36, 81}
-
-	r := bytes.NewBufferString(strings.Join(lines, "\n"))
-	d := strum.NewDecoder(r)
-
-	var u uint8
-	var output []uint8
-
-	err := d.Decode(&u)
-	if err != nil {
-		t.Fatal(err)
-	}
-	isWantGot(t, uints[0], u, "Decode to uint reference")
-
-	err = d.DecodeAll(&output)
-	if err != nil {
-		t.Fatal(err)
-	}
-	isWantGot(t, uints[1:], output, "Decode to uint slice")
-}
-
-func TestDecodeFloatContainers(t *testing.T) {
-	lines := []string{
-		"4.2",
-		"2.3",
-		"3.6",
-		"8.1",
-	}
-
-	floats := []float64{4.2, 2.3, 3.6, 8.1}
-
-	r := bytes.NewBufferString(strings.Join(lines, "\n"))
-	d := strum.NewDecoder(r)
-
-	var u float64
-	var output []float64
-
-	err := d.Decode(&u)
-	if err != nil {
-		t.Fatal(err)
-	}
-	isWantGot(t, floats[0], u, "Decode to float reference")
-
-	err = d.DecodeAll(&output)
-	if err != nil {
-		t.Fatal(err)
-	}
-	isWantGot(t, floats[1:], output, "Decode to float slice")
-}
-
-func TestDecodeBoolContainers(t *testing.T) {
-	lines := []string{
-		"42",
-		"23",
-		"36",
-		"81",
-	}
-
-	uints := []uint8{42, 23, 36, 81}
-
-	r := bytes.NewBufferString(strings.Join(lines, "\n"))
-	d := strum.NewDecoder(r)
-
-	var u uint8
-	var output []uint8
-
-	err := d.Decode(&u)
-	if err != nil {
-		t.Fatal(err)
-	}
-	isWantGot(t, uints[0], u, "Decode to uint reference")
-
-	err = d.DecodeAll(&output)
-	if err != nil {
-		t.Fatal(err)
-	}
-	isWantGot(t, uints[1:], output, "Decode to int slice")
-}
-
-func TestDecodeStringContainers(t *testing.T) {
-	lines := []string{
-		"42",
-		"23",
-		"36",
-		"81",
-	}
-
-	xs := []string{"42", "23", "36", "81"}
-
-	r := bytes.NewBufferString(strings.Join(lines, "\n"))
-	d := strum.NewDecoder(r)
-
-	var s string
-	var output []string
-
-	err := d.Decode(&s)
-	if err != nil {
-		t.Fatal(err)
-	}
-	isWantGot(t, xs[0], s, "Decode to string reference")
-
-	err = d.DecodeAll(&output)
-	if err != nil {
-		t.Fatal(err)
-	}
-	isWantGot(t, xs[1:], output, "Decode to string slice")
+	testTestCases(t, cases)
 }
 
 func TestDecodeSlices(t *testing.T) {
