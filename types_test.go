@@ -534,6 +534,16 @@ func TestPointers(t *testing.T) {
 				return x, err
 			},
 		},
+		{
+			label: "*time.Time uses dateparser",
+			input: "2021",
+			want:  func() interface{} { return time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC) },
+			decode: func(t *testing.T, d *strum.Decoder) (interface{}, error) {
+				var tm *time.Time
+				err := d.Decode(&tm)
+				return *tm, err
+			},
+		},
 	}
 
 	testTestCases(t, cases)

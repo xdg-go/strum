@@ -170,7 +170,7 @@ func (d *Decoder) decode(destValue reflect.Value) error {
 	switch destValue.Type() {
 	case durationType:
 		return d.decodeSingleToken(destValue)
-	case timeType:
+	case timeType, timePtrType:
 		return d.decodeSingleToken(destValue)
 	}
 
