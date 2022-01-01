@@ -25,19 +25,19 @@ var timePtrType = reflect.TypeOf(&time.Time{})
 
 // isDecodableValue duplicates the logic tree of `decodeToValue` to allow input
 // validation before decoding is called. This supports better error messages.
-func isDecodableValue(v reflect.Value) bool {
-	switch v.Type() {
+func isDecodableValue(rv reflect.Value) bool {
+	switch rv.Type() {
 	case durationType:
 		return true
 	case timeType, timePtrType:
 		return true
 	}
 
-	if isTextUnmarshaler(v) {
+	if isTextUnmarshaler(rv) {
 		return true
 	}
 
-	switch v.Kind() {
+	switch rv.Kind() {
 	case reflect.Bool:
 		return true
 	case reflect.String:
@@ -55,37 +55,37 @@ func isDecodableValue(v reflect.Value) bool {
 
 var textUnmarshalerType = reflect.TypeOf((*encoding.TextUnmarshaler)(nil)).Elem()
 
-func isTextUnmarshaler(v reflect.Value) bool {
-	return v.Type().Implements(textUnmarshalerType)
+func isTextUnmarshaler(rv reflect.Value) bool {
+	return rv.Type().Implements(textUnmarshalerType)
 }
 
-func (d *Decoder) decodeToValue(name string, v reflect.Value, s string) error {
+func (d *Decoder) decodeToValue(name string, rv reflect.Value, s string) error {
 	// Custom parsing for certain types
-	switch v.Type() {
+	switch rv.Type() {
 	case durationType:
 		t, err := time.ParseDuration(s)
 		if err != nil {
 			return decodingError(name, err)
 		}
-		v.Set(reflect.ValueOf(t))
+		rv.Set(reflect.ValueOf(t))
 		return nil
 	case timeType:
 		t, err := d.dp(s)
 		if err != nil {
 			return decodingError(name, err)
 		}
-		v.Set(reflect.ValueOf(t))
+		rv.Set(reflect.ValueOf(t))
 		return nil
 	case timePtrType:
 		// Handle recursively to avoid using TextUnmarshaler
-		maybeInstantiatePtr(v)
-		return d.decodeToValue(name, v.Elem(), s)
+		maybeInstantiatePtr(rv)
+		return d.decodeToValue(name, rv.Elem(), s)
 	}
 
 	// Handle TextUnmarshaler types
-	if isTextUnmarshaler(v) {
-		maybeInstantiatePtr(v)
-		f := v.MethodByName("UnmarshalText")
+	if isTextUnmarshaler(rv) {
+		maybeInstantiatePtr(rv)
+		f := rv.MethodByName("UnmarshalText")
 		xs := []byte(s)
 		args := []reflect.Value{reflect.ValueOf(xs)}
 		ret := f.Call(args)
@@ -95,49 +95,49 @@ func (d *Decoder) decodeToValue(name string, v reflect.Value, s string) error {
 		return nil
 	}
 
-	switch v.Kind() {
+	switch rv.Kind() {
 	case reflect.Bool:
 		switch strings.ToLower(s) {
 		case "true":
-			v.SetBool(true)
+			rv.SetBool(true)
 		case "false":
-			v.SetBool(false)
+			rv.SetBool(false)
 		default:
 			return decodingError(name, fmt.Errorf("error decoding '%s' as boolean", s))
 		}
 	case reflect.String:
-		v.SetString(s)
+		rv.SetString(s)
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		i, err := strconv.ParseInt(s, 0, v.Type().Bits())
+		i, err := strconv.ParseInt(s, 0, rv.Type().Bits())
 		if err != nil {
 			return decodingError(name, err)
 		}
-		v.SetInt(i)
+		rv.SetInt(i)
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		i, err := strconv.ParseUint(s, 0, v.Type().Bits())
+		i, err := strconv.ParseUint(s, 0, rv.Type().Bits())
 		if err != nil {
 			return decodingError(name, err)
 		}
-		v.SetUint(i)
+		rv.SetUint(i)
 	case reflect.Float32, reflect.Float64:
-		f, err := strconv.ParseFloat(s, v.Type().Bits())
+		f, err := strconv.ParseFloat(s, rv.Type().Bits())
 		if err != nil {
 			return decodingError(name, err)
 		}
-		v.SetFloat(f)
+		rv.SetFloat(f)
 	case reflect.Ptr:
-		maybeInstantiatePtr(v)
-		return d.decodeToValue(name, v.Elem(), s)
+		maybeInstantiatePtr(rv)
+		return d.decodeToValue(name, rv.Elem(), s)
 	default:
-		return decodingError(name, fmt.Errorf("unsupported type %s", v.Type()))
+		return decodingError(name, fmt.Errorf("unsupported type %s", rv.Type()))
 	}
 
 	return nil
 }
 
-func maybeInstantiatePtr(v reflect.Value) {
-	if v.Kind() == reflect.Ptr && v.IsNil() {
-		np := reflect.New(v.Type().Elem())
-		v.Set(np)
+func maybeInstantiatePtr(rv reflect.Value) {
+	if rv.Kind() == reflect.Ptr && rv.IsNil() {
+		np := reflect.New(rv.Type().Elem())
+		rv.Set(np)
 	}
 }
