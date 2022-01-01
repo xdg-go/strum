@@ -20,7 +20,8 @@
 // Trying to unmarshal multiple tokens into a single variable or too many tokens
 // for the number of fields in a struct will result in an error.  Having too few
 // tokens for the fields in a struct is allowed; remaining fields will be
-// zeroed.
+// zeroed.  When unmarshaling to a slice, decoded values are appended; existing
+// values are untouched.
 //
 // strum supports the following types:
 //
@@ -315,8 +316,8 @@ func (d *Decoder) decodeAll(sliceValue reflect.Value) error {
 	}
 }
 
-// Unmarshal parses the input data as newline delimited strings and stores the
-// result in the value pointed to by `v`, where `v` must be a pointer to a slice
+// Unmarshal parses the input data as newline delimited strings and appends the
+// result to the value pointed to by `v`, where `v` must be a pointer to a slice
 // of a type that would valid for Decode.  If `v` points to an uninitialized
 // slice, the slice will be created.
 func Unmarshal(data []byte, v interface{}) error {
