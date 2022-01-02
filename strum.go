@@ -236,7 +236,9 @@ func (d *Decoder) decodeStruct(destValue reflect.Value) error {
 }
 
 func (d *Decoder) decodeSlice(sliceValue reflect.Value) error {
-	if !isDecodableValue(reflect.New(sliceValue.Type().Elem()).Elem()) {
+	sliceType := sliceValue.Type()
+
+	if !isDecodableValue(reflect.New(sliceType.Elem()).Elem()) {
 		return fmt.Errorf("decoding to this slice type not supported: %s", sliceValue.Type())
 	}
 
@@ -244,8 +246,6 @@ func (d *Decoder) decodeSlice(sliceValue reflect.Value) error {
 	if err != nil {
 		return err
 	}
-
-	sliceType := sliceValue.Type()
 
 	for i, s := range tokens {
 		v := reflect.New(sliceType.Elem()).Elem()
