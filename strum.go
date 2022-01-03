@@ -304,15 +304,15 @@ func (d *Decoder) decodeAll(sliceValue reflect.Value) error {
 
 	// Decode every line into the slice
 	for {
-		v := reflect.New(sliceType.Elem()).Elem()
-		err := d.decode(v)
+		rv := reflect.New(sliceType.Elem()).Elem()
+		err := d.decode(rv)
 		if err != nil {
 			if err == io.EOF {
 				return nil
 			}
 			return err
 		}
-		sliceValue.Set(reflect.Append(sliceValue, v))
+		sliceValue.Set(reflect.Append(sliceValue, rv))
 	}
 }
 
@@ -333,31 +333,31 @@ func Unmarshal(data []byte, v interface{}) error {
 
 func extractDestValue(v interface{}) (reflect.Value, error) {
 	if v == nil {
-		return reflect.Value{}, fmt.Errorf("argument must be a non-nil pointer")
+		return reflect.Value{}, errors.New("argument must be a non-nil pointer")
 	}
 
-	argValue := reflect.ValueOf(v)
+	rv := reflect.ValueOf(v)
 
-	if argValue.Kind() != reflect.Ptr {
-		return reflect.Value{}, fmt.Errorf("argument must be a pointer, not %s", argValue.Kind())
+	if rv.Kind() != reflect.Ptr {
+		return reflect.Value{}, fmt.Errorf("argument must be a pointer, not %s", rv.Kind())
 	}
 
-	if argValue.IsNil() {
-		return reflect.Value{}, fmt.Errorf("argument must be a non-nil pointer")
+	if rv.IsNil() {
+		return reflect.Value{}, errors.New("argument must be a non-nil pointer")
 	}
 
-	return argValue.Elem(), nil
+	return rv.Elem(), nil
 }
 
 func extractDestSlice(v interface{}) (reflect.Value, error) {
-	sliceValue, err := extractDestValue(v)
+	rv, err := extractDestValue(v)
 	if err != nil {
 		return reflect.Value{}, err
 	}
 
-	if sliceValue.Kind() != reflect.Slice {
-		return reflect.Value{}, fmt.Errorf("argument must be a pointer to slice, not %s", sliceValue.Kind())
+	if rv.Kind() != reflect.Slice {
+		return reflect.Value{}, fmt.Errorf("argument must be a pointer to slice, not %s", rv.Kind())
 	}
 
-	return sliceValue, nil
+	return rv, nil
 }
