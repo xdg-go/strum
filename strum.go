@@ -26,7 +26,7 @@
 // strum supports the following types:
 //
 //  - strings
-//  - booleans ('true', 'false'; case insensitive)
+//  - booleans (like strconv.ParseBool but case insensitive)
 //  - integers (signed and unsigned, all widths)
 //  - floats (32-bit and 64-bit)
 //

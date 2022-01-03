@@ -97,14 +97,11 @@ func (d *Decoder) decodeToValue(name string, rv reflect.Value, s string) error {
 
 	switch rv.Kind() {
 	case reflect.Bool:
-		switch strings.ToLower(s) {
-		case "true":
-			rv.SetBool(true)
-		case "false":
-			rv.SetBool(false)
-		default:
-			return decodingError(name, fmt.Errorf("error decoding '%s' as boolean", s))
+		b, err := strconv.ParseBool(strings.ToLower(s))
+		if err != nil {
+			return decodingError(name, err)
 		}
+		rv.SetBool(b)
 	case reflect.String:
 		rv.SetString(s)
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:

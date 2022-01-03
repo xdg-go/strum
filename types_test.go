@@ -84,6 +84,18 @@ func TestDecodeBool(t *testing.T) {
 			decode: boolDecode,
 		},
 		{
+			label:  "string t",
+			input:  "t",
+			want:   func() interface{} { return true },
+			decode: boolDecode,
+		},
+		{
+			label:  "string 1",
+			input:  "1",
+			want:   func() interface{} { return true },
+			decode: boolDecode,
+		},
+		{
 			label:       "invalid string",
 			input:       "yes",
 			decode:      boolDecode,
